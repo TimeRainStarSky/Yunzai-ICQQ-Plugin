@@ -26,44 +26,65 @@ function makeRequest(data) {
 
 async function connectBot(token) {
   token = token.split(":")
+  const id = Number(token[1])
   const bot = createClient({
     ...config.bot,
     platform: token[0],
-    data_dir: `${process.cwd()}/data/icqq/${token[1]}`,
+    data_dir: `${process.cwd()}/data/icqq/${id}`,
   })
+  bot.logger = {
+    trace: log => logger.trace(`${logger.blue(`[${id}]`)} ${log}`),
+    debug: log => logger.debug(`${logger.blue(`[${id}]`)} ${log}`),
+    info: log => logger.info(`${logger.blue(`[${id}]`)} ${log}`),
+    mark: log => logger.mark(`${logger.blue(`[${id}]`)} ${log}`),
+    warn: log => {
+      logger.warn(`${logger.blue(`[${id}]`)} ${log}`)
+      Bot.sendMasterMsg(`[${id}] ${log}`)
+    },
+    error: log => {
+      logger.error(`${logger.blue(`[${id}]`)} ${log}`)
+      Bot.sendMasterMsg(`[${id}] ${log}`)
+    },
+    fatal: log => {
+      logger.fatal(`${logger.blue(`[${id}]`)} ${log}`)
+      Bot.sendMasterMsg(`[${id}] ${log}`)
+    },
+  }
 
   bot.on("system.login.qrcode", async data => {
-    Bot.sendMasterMsg(["扫码完成后，回复 任意消息 继续登录", segment.image(data.image)])
+    Bot.sendMasterMsg([`[${id}] 扫码完成后，回复 任意消息 继续登录`, segment.image(data.image)])
     await Bot.getMasterMsg()
     bot.qrcodeLogin()
   })
 
   bot.on("system.login.slider", async data => {
-    Bot.sendMasterMsg(`滑动验证完成后，回复 ticket 继续登录\n${data.url}`)
+    Bot.sendMasterMsg(`[${id}] 滑动验证完成后，回复 ticket 继续登录\n${data.url}`)
     bot.submitSlider(await Bot.getMasterMsg())
   })
 
   bot.on("system.login.device", async data => {
-    Bot.sendMasterMsg(`请选择设备锁验证方式\n短信验证：回复 短信 继续登录\n扫码验证：扫码完成后，回复 任意消息 继续登录\n${data.url}`)
+    Bot.sendMasterMsg(`[${id}] 请选择设备锁验证方式\n短信验证：回复 短信 继续登录\n扫码验证：扫码完成后，回复 任意消息 继续登录\n${data.url}`)
     const msg = await Bot.getMasterMsg()
     if (msg == "短信") {
       bot.sendSmsCode()
-      Bot.sendMasterMsg("短信已发送，回复 验证码 继续登录")
+      Bot.sendMasterMsg(`[${id}] 短信已发送，回复 验证码 继续登录`)
       bot.submitSmsCode(await Bot.getMasterMsg())
     } else {
       bot.login()
     }
   })
 
-  bot.login(Number(token[1]), token[2])
+  bot.login(id, token[2])
   await new Promise(resolve => bot.once("system.online", () => resolve()))
+  bot.logger.warn = log => logger.warn(`${logger.blue(`[${id}]`)} ${log}`)
+  bot.logger.error = log => logger.error(`${logger.blue(`[${id}]`)} ${log}`)
+  bot.logger.fatal = log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`)
 
   if (!bot.uin) {
     logger.error(`${logger.blue(`[${token}]`)} ICQQBot 连接失败`)
     return false
   }
 
-  const id = bot.uin
   Bot[id] = bot
 
   if (Array.isArray(Bot.uin)) {
