@@ -66,16 +66,14 @@ async function connectBot(token) {
     }
   })
 
+  bot.on("system.login.error", (data) => Bot.sendMasterMsg(`[${id}] 登录错误：${data.message}(${data.code})`))
+  bot.on("system.offline", (data) => Bot.sendMasterMsg(`[${id}] 账号下线：${data.message}`))
+  bot.on("system.online", () => bot.logger = log)
+
   if (await new Promise(resolve => {
     bot.login(id, token[2])
-    bot.once("system.online", () => {
-      bot.logger = log
-      resolve(false)
-    })
-    bot.once("system.login.error", (data) => {
-      Bot.sendMasterMsg(`[${id}] 登录错误：${data.message}(${data.code})`)
-      resolve(true)
-    })
+    bot.once("system.online", () => resolve(false))
+    bot.once("system.login.error", () => resolve(true))
   })) {
     logger.error(`${logger.blue(`[${token}]`)} ICQQBot 连接失败`)
     return false
