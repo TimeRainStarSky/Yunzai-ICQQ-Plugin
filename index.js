@@ -76,9 +76,15 @@ async function connectBot(token) {
 
   bot.login(id, token[2])
   await new Promise(resolve => bot.once("system.online", () => resolve()))
-  bot.logger.warn = log => logger.warn(`${logger.blue(`[${id}]`)} ${log}`)
-  bot.logger.error = log => logger.error(`${logger.blue(`[${id}]`)} ${log}`)
-  bot.logger.fatal = log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`)
+  bot.logger = {
+    trace: log => logger.trace(`${logger.blue(`[${id}]`)} ${log}`),
+    debug: log => logger.debug(`${logger.blue(`[${id}]`)} ${log}`),
+    info: log => logger.info(`${logger.blue(`[${id}]`)} ${log}`),
+    mark: log => logger.mark(`${logger.blue(`[${id}]`)} ${log}`),
+    warn: log => logger.warn(`${logger.blue(`[${id}]`)} ${log}`),
+    error: log => logger.error(`${logger.blue(`[${id}]`)} ${log}`),
+    fatal: log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`),
+  }
 
   if (!bot.uin) {
     logger.error(`${logger.blue(`[${token}]`)} ICQQBot 连接失败`)
