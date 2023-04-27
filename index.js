@@ -32,24 +32,16 @@ async function connectBot(token) {
     platform: token[0],
     data_dir: `${process.cwd()}/data/icqq/${id}`,
   })
-  bot.logger = {
+  const log = {
     trace: log => logger.trace(`${logger.blue(`[${id}]`)} ${log}`),
     debug: log => logger.debug(`${logger.blue(`[${id}]`)} ${log}`),
     info: log => logger.info(`${logger.blue(`[${id}]`)} ${log}`),
     mark: log => logger.mark(`${logger.blue(`[${id}]`)} ${log}`),
-    warn: log => {
-      logger.warn(`${logger.blue(`[${id}]`)} ${log}`)
-      Bot.sendMasterMsg(`[${id}] ${log}`)
-    },
-    error: log => {
-      logger.error(`${logger.blue(`[${id}]`)} ${log}`)
-      Bot.sendMasterMsg(`[${id}] ${log}`)
-    },
-    fatal: log => {
-      logger.fatal(`${logger.blue(`[${id}]`)} ${log}`)
-      Bot.sendMasterMsg(`[${id}] ${log}`)
-    },
+    warn: log => logger.warn(`${logger.blue(`[${id}]`)} ${log}`),
+    error: log => logger.error(`${logger.blue(`[${id}]`)} ${log}`),
+    fatal: log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`),
   }
+  bot.logger = log
 
   bot.on("system.login.qrcode", async data => {
     Bot.sendMasterMsg([`[${id}] 扫码完成后，回复 任意消息 继续登录`, segment.image(data.image)])
@@ -74,19 +66,17 @@ async function connectBot(token) {
     }
   })
 
-  bot.login(id, token[2])
-  await new Promise(resolve => bot.once("system.online", () => resolve()))
-  bot.logger = {
-    trace: log => logger.trace(`${logger.blue(`[${id}]`)} ${log}`),
-    debug: log => logger.debug(`${logger.blue(`[${id}]`)} ${log}`),
-    info: log => logger.info(`${logger.blue(`[${id}]`)} ${log}`),
-    mark: log => logger.mark(`${logger.blue(`[${id}]`)} ${log}`),
-    warn: log => logger.warn(`${logger.blue(`[${id}]`)} ${log}`),
-    error: log => logger.error(`${logger.blue(`[${id}]`)} ${log}`),
-    fatal: log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`),
-  }
-
-  if (!bot.uin) {
+  if (await new Promise(resolve => {
+    bot.login(id, token[2])
+    bot.once("system.online", () => {
+      bot.logger = log
+      resolve(false)
+    })
+    bot.once("system.login.error", (data) => {
+      Bot.sendMasterMsg(`[${id}] 登录错误：${data.message}(${data.code})`)
+      resolve(true)
+    })
+  })) {
     logger.error(`${logger.blue(`[${token}]`)} ICQQBot 连接失败`)
     return false
   }
