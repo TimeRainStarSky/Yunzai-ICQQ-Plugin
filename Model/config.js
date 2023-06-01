@@ -4,7 +4,7 @@ import _ from "lodash"
 
 const path = `${process.cwd()}/plugins/ICQQ-Plugin/`
 const configFile = `${path}config.yaml`
-const configSave = config => fs.writeFileSync(configFile, YAML.stringify(config), "utf-8")
+const configSave = config => fs.writeFileSync(configFile, YAML.stringify({ ...config, package: undefined }), "utf-8")
 
 const config = {
   tips: "",
