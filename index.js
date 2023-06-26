@@ -4,6 +4,11 @@ import { config, configSave } from "./Model/config.js"
 import { createClient } from "icqq"
 
 const adapter = new class ICQQAdapter {
+  constructor() {
+    this.id = "QQ"
+    this.name = "ICQQ"
+  }
+
   makeMessage(data) {
     if (data.sub_type)
       Bot.emit(`${data.post_type}.${data.message_type}.${data.sub_type}`, data)
@@ -67,8 +72,8 @@ const adapter = new class ICQQAdapter {
       }
     })
 
-    bot.on("system.login.error", (data) => Bot.sendMasterMsg(`[${id}] 登录错误：${data.message}(${data.code})`))
-    bot.on("system.offline", (data) => Bot.sendMasterMsg(`[${id}] 账号下线：${data.message}`))
+    bot.on("system.login.error", data => Bot.sendMasterMsg(`[${id}] 登录错误：${data.message}(${data.code})`))
+    bot.on("system.offline", data => Bot.sendMasterMsg(`[${id}] 账号下线：${data.message}`))
     bot.on("system.online", () => bot.logger = log)
 
     if (await new Promise(resolve => {
@@ -76,19 +81,15 @@ const adapter = new class ICQQAdapter {
       bot.once("system.online", () => resolve(false))
       bot.once("system.login.error", () => resolve(true))
     })) {
-      logger.error(`${logger.blue(`[${token}]`)} ICQQBot 连接失败`)
+      logger.error(`${logger.blue(`[${token}]`)} ${this.name}(${this.id}) 连接失败`)
       return false
     }
 
     Bot[id] = bot
     Bot[id].avatar = Bot[id].pickFriend(id).getAvatarUrl()
 
-    if (Array.isArray(Bot.uin)) {
-      if (!Bot.uin.includes(id))
-        Bot.uin.push(id)
-    } else {
-      Bot.uin = [id]
-    }
+    if (!Bot.uin.includes(id))
+      Bot.uin.push(id)
 
     Bot[id].on("message", data => {
       data.self_id = id
@@ -108,20 +109,23 @@ const adapter = new class ICQQAdapter {
       this.makeRequest(data)
     })
 
-    logger.mark(`${logger.blue(`[${id}]`)} ICQQBot 已连接`)
+    logger.mark(`${logger.blue(`[${id}]`)} ${this.name}(${this.id}) 已连接`)
     Bot.emit(`connect.${id}`, Bot[id])
     Bot.emit(`connect`, Bot[id])
     return true
   }
+
+  async load() {
+    for (const token of config.token)
+      await adapter.connect(token)
+    return true
+  }
 }
 
-Bot.once("online", async () => {
-  for (const token of config.token)
-    await adapter.connect(token)
-})
+Bot.adapter.push(adapter)
 
 export class ICQQ extends plugin {
-  constructor () {
+  constructor() {
     super({
       name: "ICQQ",
       dsc: "ICQQ",
