@@ -1,7 +1,7 @@
 logger.info(logger.yellow("- 正在加载 ICQQ 插件"))
 
 import { config, configSave } from "./Model/config.js"
-import { createClient } from "icqq"
+import { createClient, core } from "icqq"
 
 const adapter = new class ICQQAdapter {
   constructor() {
@@ -48,6 +48,7 @@ const adapter = new class ICQQAdapter {
       fatal: log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`),
     }
     bot.logger = log
+    bot.core = core
 
     bot.on("system.login.qrcode", async data => {
       Bot.sendMasterMsg([`[${id}] 扫码完成后，回复 任意消息 继续登录`, segment.image(data.image)])
@@ -77,15 +78,16 @@ const adapter = new class ICQQAdapter {
     bot.on("system.online", () => bot.logger = log)
 
     if (await new Promise(resolve => {
-      bot.login(id, token[2])
       bot.once("system.online", () => resolve(false))
       bot.once("system.login.error", () => resolve(true))
+      bot.login(id, token[2])
     })) {
       logger.error(`${logger.blue(`[${token}]`)} ${this.name}(${this.id}) 连接失败`)
       return false
     }
 
     Bot[id] = bot
+    Bot[id].adapter = this
     Bot[id].avatar = Bot[id].pickFriend(id).getAvatarUrl()
 
     if (!Bot.uin.includes(id))
@@ -134,22 +136,22 @@ export class ICQQ extends plugin {
         {
           reg: "^#[Qq]+账号$",
           fnc: "List",
-          permission: "master"
+          permission: config.permission,
         },
         {
           reg: "^#[Qq]+设置[0-9]:[0-9]+:.*$",
           fnc: "Token",
-          permission: "master"
+          permission: config.permission,
         }
       ]
     })
   }
 
-  async List () {
+  async List() {
     await this.reply(`共${config.token.length}个账号：\n${config.token.join("\n")}`, true)
   }
 
-  async Token () {
+  async Token() {
     const token = this.e.msg.replace(/^#[Qq]+设置/, "").trim()
     if (config.token.includes(token)) {
       config.token = config.token.filter(item => item != token)
