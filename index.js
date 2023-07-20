@@ -113,7 +113,7 @@ const adapter = new class ICQQAdapter {
 
     logger.mark(`${logger.blue(`[${id}]`)} ${this.name}(${this.id}) 已连接`)
     Bot.emit(`connect.${id}`, Bot[id])
-    Bot.emit(`connect`, Bot[id])
+    Bot.emit("connect", Bot[id])
     return true
   }
 
