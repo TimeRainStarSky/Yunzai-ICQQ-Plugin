@@ -1,4 +1,4 @@
-logger.info(logger.yellow("- 正在加载 ICQQ 插件"))
+logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
 import { config, configSave } from "./Model/config.js"
 import { createClient, core } from "icqq"
@@ -129,8 +129,8 @@ Bot.adapter.push(adapter)
 export class ICQQ extends plugin {
   constructor() {
     super({
-      name: "ICQQ",
-      dsc: "ICQQ",
+      name: "ICQQAdapter",
+      dsc: "ICQQ 适配器设置",
       event: "message",
       rule: [
         {
@@ -169,4 +169,4 @@ export class ICQQ extends plugin {
   }
 }
 
-logger.info(logger.green("- ICQQ 插件 加载完成"))
+logger.info(logger.green("- ICQQ 适配器插件 加载完成"))
