@@ -16,16 +16,11 @@ TRSS-Yunzai ICQQ Bot 适配器 插件
 ## 安装教程
 
 1. 准备：[TRSS-Yunzai](../../../Yunzai)
-
-2. 自动安装：`#安装ICQQ-Plugin`
-- 手动安装：[GitHub](https://github.com/TimeRainStarSky/Yunzai-ICQQ-Plugin) 或 [Gitee](https://gitee.com/TimeRainStarSky/Yunzai-ICQQ-Plugin)
-
-```
-git clone --depth 1 https://gitee.com/TimeRainStarSky/Yunzai-ICQQ-Plugin plugins/ICQQ-Plugin
-pnpm i
-```
+2. 输入：`#安装ICQQ-Plugin`
+3. 输入：`#QQ设置QQ号:密码:登录设备:版本号`
 
 ## 使用教程
 
 - #QQ账号
-- #QQ设置 + `登录平台:QQ号:密码`
+- #QQ设置 + `QQ号:密码:登录设备:版本号`
+- #QQ签名 + `签名服务器地址`

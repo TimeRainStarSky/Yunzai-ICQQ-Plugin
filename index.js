@@ -32,10 +32,11 @@ const adapter = new class ICQQAdapter {
 
   async connect(token) {
     token = token.split(":")
-    const id = Number(token[1])
+    const id = Number(token[0])
     const bot = createClient({
       ...config.bot,
-      platform: token[0],
+      platform: token[2],
+      ver: token[3],
       data_dir: `${process.cwd()}/data/icqq/${id}`,
     })
     const log = {
@@ -80,7 +81,7 @@ const adapter = new class ICQQAdapter {
     if (await new Promise(resolve => {
       bot.once("system.online", () => resolve(false))
       bot.once("system.login.error", () => resolve(true))
-      bot.login(id, token[2])
+      bot.login(id, token[1])
     })) {
       logger.error(`${logger.blue(`[${token}]`)} ${this.name}(${this.id}) 连接失败`)
       return false
@@ -139,8 +140,13 @@ export class ICQQ extends plugin {
           permission: config.permission,
         },
         {
-          reg: "^#[Qq]+设置[0-9]:[0-9]+:.*$",
+          reg: "^#[Qq]+设置[0-9]+:.+:[0-9]:.*$",
           fnc: "Token",
+          permission: config.permission,
+        },
+        {
+          reg: "^#[Qq]+签名.+$",
+          fnc: "SignUrl",
           permission: config.permission,
         }
       ]
@@ -166,6 +172,12 @@ export class ICQQ extends plugin {
       }
     }
     configSave(config)
+  }
+
+  async SignUrl() {
+    config.bot.sign_api_addr = this.e.msg.replace(/^#[Qq]+签名/, "").trim()
+    configSave(config)
+    await this.reply("签名已设置，重启后生效", true)
   }
 }
 
