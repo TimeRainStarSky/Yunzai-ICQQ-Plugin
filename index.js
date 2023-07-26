@@ -140,7 +140,7 @@ export class ICQQ extends plugin {
           permission: config.permission,
         },
         {
-          reg: "^#[Qq]+设置[0-9]+:.+:[0-9]:.*$",
+          reg: "^#[Qq]+设置[0-9]+:.*:[0-9]+:.*$",
           fnc: "Token",
           permission: config.permission,
         },
