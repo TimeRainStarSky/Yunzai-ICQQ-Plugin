@@ -90,6 +90,11 @@ const adapter = new class ICQQAdapter {
     Bot[id] = bot
     Bot[id].adapter = this
     Bot[id].avatar = Bot[id].pickFriend(id).getAvatarUrl()
+    Bot[id].version = {
+      id: this.id,
+      name: this.name,
+      version: config.package.dependencies.icqq,
+    }
 
     if (!Bot.uin.includes(id))
       Bot.uin.push(id)
