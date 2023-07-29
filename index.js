@@ -30,7 +30,7 @@ const adapter = new class ICQQAdapter {
     Bot.emit(`${data.post_type}`, data)
   }
 
-  async connect(token) {
+  async connect(token, send = msg => Bot.sendMasterMsg(msg), get = () => Bot.getMasterMsg()) {
     token = token.split(":")
     const id = Number(token[0])
     const bot = createClient({
@@ -52,30 +52,30 @@ const adapter = new class ICQQAdapter {
     bot.core = core
 
     bot.on("system.login.qrcode", async data => {
-      Bot.sendMasterMsg([`[${id}] 扫码完成后，回复 任意消息 继续登录`, segment.image(data.image)])
-      await Bot.getMasterMsg()
+      send([`[${id}] 扫码完成后，回复 任意消息 继续登录`, segment.image(data.image)])
+      await get()
       bot.qrcodeLogin()
     })
 
     bot.on("system.login.slider", async data => {
-      Bot.sendMasterMsg(`[${id}] 滑动验证完成后，回复 ticket 继续登录\n${data.url}`)
-      bot.submitSlider(await Bot.getMasterMsg())
+      send(`[${id}] 滑动验证完成后，回复 ticket 继续登录\n${data.url}`)
+      bot.submitSlider(await get())
     })
 
     bot.on("system.login.device", async data => {
-      Bot.sendMasterMsg(`[${id}] 请选择设备锁验证方式\n短信验证：回复 短信 继续登录\n扫码验证：扫码完成后，回复 任意消息 继续登录\n${data.url}`)
-      const msg = await Bot.getMasterMsg()
+      send(`[${id}] 请选择设备锁验证方式\n短信验证：回复 短信 继续登录\n扫码验证：扫码完成后，回复 任意消息 继续登录\n${data.url}`)
+      const msg = await get()
       if (msg == "短信") {
         bot.sendSmsCode()
-        Bot.sendMasterMsg(`[${id}] 短信已发送，回复 验证码 继续登录`)
-        bot.submitSmsCode(await Bot.getMasterMsg())
+        send(`[${id}] 短信已发送，回复 验证码 继续登录`)
+        bot.submitSmsCode(await get())
       } else {
         bot.login()
       }
     })
 
-    bot.on("system.login.error", data => Bot.sendMasterMsg(`[${id}] 登录错误：${data.message}(${data.code})`))
-    bot.on("system.offline", data => Bot.sendMasterMsg(`[${id}] 账号下线：${data.message}`))
+    bot.on("system.login.error", data => send(`[${id}] 登录错误：${data.message}(${data.code})`))
+    bot.on("system.offline", data => send(`[${id}] 账号下线：${data.message}`))
     bot.on("system.online", () => bot.logger = log)
 
     if (await new Promise(resolve => {
@@ -168,7 +168,7 @@ export class ICQQ extends plugin {
       config.token = config.token.filter(item => item != token)
       await this.reply(`账号已删除，重启后生效，共${config.token.length}个账号`, true)
     } else {
-      if (await adapter.connect(token)) {
+      if (await adapter.connect(token, msg => this.reply(msg, true), () => Bot.getFriendMsg(this.e))) {
         config.token.push(token)
         await this.reply(`账号已连接，共${config.token.length}个账号`, true)
       } else {
