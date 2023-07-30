@@ -100,19 +100,16 @@ const adapter = new class ICQQAdapter {
       Bot.uin.push(id)
 
     Bot[id].on("message", data => {
-      data.self_id = id
       data.bot = Bot[id]
       this.makeMessage(data)
     })
 
     Bot[id].on("notice", data => {
-      data.self_id = id
       data.bot = Bot[id]
       this.makeNotice(data)
     })
 
     Bot[id].on("request", data => {
-      data.self_id = id
       data.bot = Bot[id]
       this.makeRequest(data)
     })
