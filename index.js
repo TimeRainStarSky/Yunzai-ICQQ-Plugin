@@ -7,6 +7,7 @@ const adapter = new class ICQQAdapter {
   constructor() {
     this.id = "QQ"
     this.name = "ICQQ"
+    this.version = config.package.dependencies.icqq.replace("^", "v")
   }
 
   makeMessage(data) {
@@ -83,7 +84,7 @@ const adapter = new class ICQQAdapter {
       bot.once("system.login.error", () => resolve(true))
       bot.login(id, token[1])
     })) {
-      logger.error(`${logger.blue(`[${token}]`)} ${this.name}(${this.id}) 连接失败`)
+      logger.error(`${logger.blue(`[${token}]`)} ${this.name}(${this.id}) ${this.version} 连接失败`)
       return false
     }
 
@@ -93,7 +94,7 @@ const adapter = new class ICQQAdapter {
     Bot[id].version = {
       id: this.id,
       name: this.name,
-      version: config.package.dependencies.icqq,
+      version: this.version,
     }
 
     if (!Bot.uin.includes(id))
@@ -114,7 +115,7 @@ const adapter = new class ICQQAdapter {
       this.makeRequest(data)
     })
 
-    logger.mark(`${logger.blue(`[${id}]`)} ${this.name}(${this.id}) 已连接`)
+    logger.mark(`${logger.blue(`[${id}]`)} ${this.name}(${this.id}) ${this.version} 已连接`)
     Bot.emit(`connect.${id}`, Bot[id])
     Bot.emit("connect", Bot[id])
     return true
