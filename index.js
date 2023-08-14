@@ -10,6 +10,13 @@ const adapter = new class ICQQAdapter {
     this.version = config.package.dependencies.icqq.replace("^", "v")
   }
 
+  makeEvent(data) {
+    for (const i of [data.friend, data.group, data.member]) {
+      if (typeof i != "object") continue
+      if (!i.getInfo) i.getInfo = () => i.info
+    }
+  }
+
   makeMessage(data) {
     if (data.sub_type)
       Bot.emit(`${data.post_type}.${data.message_type}.${data.sub_type}`, data)
@@ -102,16 +109,19 @@ const adapter = new class ICQQAdapter {
 
     Bot[id].on("message", data => {
       data.bot = Bot[id]
+      this.makeEvent(data)
       this.makeMessage(data)
     })
 
     Bot[id].on("notice", data => {
       data.bot = Bot[id]
+      this.makeEvent(data)
       this.makeNotice(data)
     })
 
     Bot[id].on("request", data => {
       data.bot = Bot[id]
+      this.makeEvent(data)
       this.makeRequest(data)
     })
 
