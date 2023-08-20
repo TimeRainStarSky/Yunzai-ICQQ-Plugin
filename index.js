@@ -17,27 +17,6 @@ const adapter = new class ICQQAdapter {
     }
   }
 
-  makeMessage(data) {
-    if (data.sub_type)
-      Bot.emit(`${data.post_type}.${data.message_type}.${data.sub_type}`, data)
-    Bot.emit(`${data.post_type}.${data.message_type}`, data)
-    Bot.emit(`${data.post_type}`, data)
-  }
-
-  makeNotice(data) {
-    if (data.sub_type)
-      Bot.emit(`${data.post_type}.${data.notice_type}.${data.sub_type}`, data)
-    Bot.emit(`${data.post_type}.${data.notice_type}`, data)
-    Bot.emit(`${data.post_type}`, data)
-  }
-
-  makeRequest(data) {
-    if (data.sub_type)
-      Bot.emit(`${data.post_type}.${data.request_type}.${data.sub_type}`, data)
-    Bot.emit(`${data.post_type}.${data.request_type}`, data)
-    Bot.emit(`${data.post_type}`, data)
-  }
-
   async connect(token, send = msg => Bot.sendMasterMsg(msg), get = () => Bot.getMasterMsg()) {
     token = token.split(":")
     const id = Number(token[0])
@@ -104,37 +83,35 @@ const adapter = new class ICQQAdapter {
       version: this.version,
     }
 
-    if (!Bot.uin.includes(id))
-      Bot.uin.push(id)
-
     Bot[id].on("message", data => {
-      data.bot = Bot[id]
       this.makeEvent(data)
-      this.makeMessage(data)
+      Bot.em(`${data.post_type}.${data.message_type}.${data.sub_type}`, data)
     })
 
     Bot[id].on("notice", data => {
-      data.bot = Bot[id]
       this.makeEvent(data)
-      this.makeNotice(data)
+      Bot.em(`${data.post_type}.${data.notice_type}.${data.sub_type}`, data)
     })
 
     Bot[id].on("request", data => {
-      data.bot = Bot[id]
       this.makeEvent(data)
-      this.makeRequest(data)
+      Bot.em(`${data.post_type}.${data.request_type}.${data.sub_type}`, data)
     })
 
+    for (const i of ["internal.input", "sync"])
+      Bot[id].on(i, data => {
+        data.self_id = id
+        Bot.em(i, data)
+      })
+
     logger.mark(`${logger.blue(`[${id}]`)} ${this.name}(${this.id}) ${this.version} 已连接`)
-    Bot.emit(`connect.${id}`, Bot[id])
-    Bot.emit("connect", Bot[id])
+    Bot.em(`connect.${id}`, { self_id: id })
     return true
   }
 
   async load() {
     for (const token of config.token)
       await adapter.connect(token)
-    return true
   }
 }
 
