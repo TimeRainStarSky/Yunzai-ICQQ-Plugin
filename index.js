@@ -2,6 +2,7 @@ logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
 import { config, configSave } from "./Model/config.js"
 import { createClient, core } from "icqq"
+import common from "../../lib/common/common.js"
 
 const adapter = new class ICQQAdapter {
   constructor() {
@@ -17,7 +18,7 @@ const adapter = new class ICQQAdapter {
     }
   }
 
-  async connect(token, send = msg => Bot.sendMasterMsg(msg), get = () => Bot.getMasterMsg()) {
+  async connect(token, send = msg => Bot.sendMasterMsg(msg), get) {
     token = token.split(":")
     const id = Number(token[0])
     const bot = createClient({
@@ -38,23 +39,30 @@ const adapter = new class ICQQAdapter {
     bot.logger = log
     bot.core = core
 
+    let getTips = "回复 "
+    if (typeof get != "function") {
+      getTips += `#QQ验证${id}:`
+      get = () => new Promise(resolve =>
+        Bot.once(`icqq.verify.${id}`, data => resolve(data.msg)))
+    }
+
     bot.on("system.login.qrcode", async data => {
-      send([`[${id}] 扫码完成后，回复 任意消息 继续登录`, segment.image(data.image)])
+      send([`[${id}] 扫码完成后，${getTips}继续登录`, segment.image(data.image)])
       await get()
       bot.qrcodeLogin()
     })
 
     bot.on("system.login.slider", async data => {
-      send(`[${id}] 滑动验证完成后，回复 ticket 继续登录\n${data.url}`)
+      send(`[${id}] 滑动验证完成后，${getTips}ticket\n${data.url}`)
       bot.submitSlider(await get())
     })
 
     bot.on("system.login.device", async data => {
-      send(`[${id}] 请选择设备锁验证方式\n短信验证：回复 短信 继续登录\n扫码验证：扫码完成后，回复 任意消息 继续登录\n${data.url}`)
+      send(`[${id}] 请选择设备锁验证方式\n短信验证：${getTips}短信\n扫码验证：扫码完成后，${getTips}继续登录\n${data.url}`)
       const msg = await get()
       if (msg == "短信") {
         bot.sendSmsCode()
-        send(`[${id}] 短信已发送，回复 验证码 继续登录`)
+        send(`[${id}] 短信已发送，${getTips}验证码`)
         bot.submitSmsCode(await get())
       } else {
         bot.login()
@@ -62,7 +70,11 @@ const adapter = new class ICQQAdapter {
     })
 
     bot.on("system.login.error", data => send(`[${id}] 登录错误：${data.message}(${data.code})`))
-    bot.on("system.offline", data => send(`[${id}] 账号下线：${data.message}`))
+    bot.on("system.offline", async data => {
+      send(`[${id}] 账号下线，5秒后重新登录：${data.message}`)
+      await common.sleep(5000)
+      bot.login()
+    })
     bot.on("system.online", () => bot.logger = log)
 
     if (await new Promise(resolve => {
@@ -111,7 +123,10 @@ const adapter = new class ICQQAdapter {
 
   async load() {
     for (const token of config.token)
-      await adapter.connect(token)
+      await new Promise(resolve => {
+        adapter.connect(token).then(resolve)
+        setTimeout(resolve, 5000)
+      })
   }
 }
 
@@ -137,6 +152,11 @@ export class ICQQ extends plugin {
         {
           reg: "^#[Qq]+签名.+$",
           fnc: "SignUrl",
+          permission: config.permission,
+        },
+        {
+          reg: "^#[Qq]+验证[0-9]+:.+$",
+          fnc: "Verify",
           permission: config.permission,
         }
       ]
@@ -168,6 +188,13 @@ export class ICQQ extends plugin {
     config.bot.sign_api_addr = this.e.msg.replace(/^#[Qq]+签名/, "").trim()
     configSave(config)
     await this.reply("签名已设置，重启后生效", true)
+  }
+
+  async Verify() {
+    const data = { msg: this.e.msg.replace(/^#[Qq]+验证/, "").trim().split(":") }
+    data.self_id = data.msg.shift()
+    data.msg = data.msg.join(":")
+    Bot.em(`icqq.verify.${data.self_id}`, data)
   }
 }
 
