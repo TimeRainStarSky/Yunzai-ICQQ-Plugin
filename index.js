@@ -39,16 +39,16 @@ const adapter = new class ICQQAdapter {
     bot.logger = log
     bot.core = core
 
-    let getTips = "回复 "
+    let getTips = "发送 "
     if (typeof get != "function") {
-      getTips += `#QQ验证${id}:`
+      getTips += `#Bot验证${id}:`
       get = () => new Promise(resolve =>
-        Bot.once(`icqq.verify.${id}`, data => resolve(data.msg)))
+        Bot.once(`verify.${id}`, data => resolve(data.msg)))
     }
 
     bot.on("system.login.qrcode", async data => {
       send([`[${id}] 扫码完成后，${getTips}继续登录`, segment.image(data.image)])
-      await get()
+      while (true) if (await get() == "继续登录") break
       bot.qrcodeLogin()
     })
 
@@ -59,34 +59,30 @@ const adapter = new class ICQQAdapter {
 
     bot.on("system.login.device", async data => {
       send(`[${id}] 请选择设备锁验证方式\n短信验证：${getTips}短信\n扫码验证：扫码完成后，${getTips}继续登录\n${data.url}`)
-      const msg = await get()
-      if (msg == "短信") {
-        bot.sendSmsCode()
-        send(`[${id}] 短信已发送，${getTips}验证码`)
-        bot.submitSmsCode(await get())
-      } else {
-        bot.login()
+      while (true) {
+        const msg = await get()
+        if (msg == "短信") {
+          bot.sendSmsCode()
+          send(`[${id}] 短信已发送，${getTips}验证码`)
+          bot.submitSmsCode(await get())
+          break
+        } else if (msg == "继续登录") {
+          bot.login()
+          break
+        }
       }
     })
 
-    bot.on("system.login.error", data => send(`[${id}] 登录错误：${data.message}(${data.code})`))
-    bot.on("system.offline", async data => {
-      send(`[${id}] 账号下线，5秒后重新登录：${data.message}`)
-      await common.sleep(5000)
-      bot.login()
-    })
+    bot.on("system.login.error", data => send(`[${id}] 登录错误，发送 #Bot上线${id} 重新登录\n${data.message}(${data.code})`))
+    bot.on("system.offline", data => send(`[${id}] 账号下线，发送 #Bot上线${id} 重新登录\n${data.message}`))
     bot.on("system.online", () => bot.logger = log)
 
-    if (await new Promise(resolve => {
-      bot.once("system.online", () => resolve(false))
-      bot.once("system.login.error", () => resolve(true))
-      bot.login(id, token[1])
-    })) {
-      logger.error(`${logger.blue(`[${token}]`)} ${this.name}(${this.id}) ${this.version} 连接失败`)
-      return false
-    }
-
     Bot[id] = bot
+    await new Promise(resolve => {
+      bot.once("system.online", resolve)
+      bot.login(id, token[1])
+    })
+
     Bot[id].adapter = this
     Bot[id].avatar = Bot[id].pickFriend(id).getAvatarUrl()
     Bot[id].version = {
@@ -153,48 +149,36 @@ export class ICQQ extends plugin {
           reg: "^#[Qq]+签名.+$",
           fnc: "SignUrl",
           permission: config.permission,
-        },
-        {
-          reg: "^#[Qq]+验证[0-9]+:.+$",
-          fnc: "Verify",
-          permission: config.permission,
         }
       ]
     })
   }
 
-  async List() {
-    await this.reply(`共${config.token.length}个账号：\n${config.token.join("\n")}`, true)
+  List() {
+    this.reply(`共${config.token.length}个账号：\n${config.token.join("\n")}`, true)
   }
 
   async Token() {
     const token = this.e.msg.replace(/^#[Qq]+设置/, "").trim()
     if (config.token.includes(token)) {
       config.token = config.token.filter(item => item != token)
-      await this.reply(`账号已删除，重启后生效，共${config.token.length}个账号`, true)
+      this.reply(`账号已删除，重启后生效，共${config.token.length}个账号`, true)
     } else {
       if (await adapter.connect(token, msg => this.reply(msg, true), () => Bot.getFriendMsg(this.e))) {
         config.token.push(token)
-        await this.reply(`账号已连接，共${config.token.length}个账号`, true)
+        this.reply(`账号已连接，共${config.token.length}个账号`, true)
       } else {
-        await this.reply(`账号连接失败`, true)
+        this.reply("账号连接失败", true)
         return false
       }
     }
     configSave(config)
   }
 
-  async SignUrl() {
+  SignUrl() {
     config.bot.sign_api_addr = this.e.msg.replace(/^#[Qq]+签名/, "").trim()
     configSave(config)
-    await this.reply("签名已设置，重启后生效", true)
-  }
-
-  async Verify() {
-    const data = { msg: this.e.msg.replace(/^#[Qq]+验证/, "").trim().split(":") }
-    data.self_id = data.msg.shift()
-    data.msg = data.msg.join(":")
-    Bot.em(`icqq.verify.${data.self_id}`, data)
+    this.reply("签名已设置，重启后生效", true)
   }
 }
 
