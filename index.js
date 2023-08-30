@@ -73,8 +73,8 @@ const adapter = new class ICQQAdapter {
       }
     })
 
-    bot.on("system.login.error", data => send(`[${id}] 登录错误，发送 #Bot上线${id} 重新登录\n${data.message}(${data.code})`))
-    bot.on("system.offline", data => send(`[${id}] 账号下线，发送 #Bot上线${id} 重新登录\n${data.message}`))
+    bot.on("system.login.error", data => send(`[${id}] 登录错误：${data.message}(${data.code})\n发送 #Bot上线${id} 重新登录`))
+    bot.on("system.offline", data => send(`[${id}] 账号下线：${data.message}\n发送 #Bot上线${id} 重新登录`))
     bot.on("system.online", () => bot.logger = log)
 
     Bot[id] = bot
