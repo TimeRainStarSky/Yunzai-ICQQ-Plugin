@@ -20,13 +20,24 @@ const adapter = new class ICQQAdapter {
 
   async connect(token, send = msg => Bot.sendMasterMsg(msg), get) {
     token = token.split(":")
-    const id = Number(token[0])
-    const bot = createClient({
+    const id = Number(token.shift())
+    const password = token.shift()
+    const cfg = {
       ...config.bot,
-      platform: token[2],
-      ver: token[3],
+      platform: token.shift(),
       data_dir: `${process.cwd()}/data/icqq/${id}`,
-    })
+    }
+
+    token = token.join(":")
+    if (token) {
+      if (token.match(/^https?:\/\//)) {
+        cfg.sign_api_addr = token
+      } else {
+        cfg.ver = token
+      }
+    }
+
+    const bot = createClient(cfg)
     const log = {
       trace: log => logger.trace(`${logger.blue(`[${id}]`)} ${log}`),
       debug: log => logger.debug(`${logger.blue(`[${id}]`)} ${log}`),
@@ -80,7 +91,7 @@ const adapter = new class ICQQAdapter {
     Bot[id] = bot
     await new Promise(resolve => {
       bot.once("system.online", resolve)
-      bot.login(id, token[1])
+      bot.login(id, password)
     })
 
     Bot[id].adapter = this
@@ -141,7 +152,7 @@ export class ICQQ extends plugin {
           permission: config.permission,
         },
         {
-          reg: "^#[Qq]+设置[0-9]+:.*:[0-9]+:.*$",
+          reg: "^#[Qq]+设置[0-9]+",
           fnc: "Token",
           permission: config.permission,
         },
