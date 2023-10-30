@@ -139,7 +139,7 @@ const adapter = new class ICQQAdapter {
 
 Bot.adapter.push(adapter)
 
-export class ICQQ extends plugin {
+export class ICQQAdapter extends plugin {
   constructor() {
     super({
       name: "ICQQAdapter",

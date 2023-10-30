@@ -5,10 +5,6 @@ import _ from "lodash"
 const configFile = "config/ICQQ.yaml"
 const configSave = config => fs.writeFileSync(configFile, YAML.stringify({ ...config, package: undefined }), "utf-8")
 
-const configFileOld = "plugins/ICQQ-Plugin/config.yaml"
-if (fs.existsSync(configFileOld))
-  fs.renameSync(configFileOld, configFile)
-
 const config = {
   tips: "",
   permission: "master",

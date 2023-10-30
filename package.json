@@ -3,6 +3,6 @@
   "type": "module",
   "author": "TimeRainStarSky",
   "dependencies": {
-    "icqq": "^0.5.4"
+    "icqq": "^0.6.1"
   }
 }
