@@ -175,7 +175,7 @@ export class ICQQAdapter extends plugin {
       config.token = config.token.filter(item => item != token)
       this.reply(`账号已删除，重启后生效，共${config.token.length}个账号`, true)
     } else {
-      if (await adapter.connect(token, msg => this.reply(msg, true), () => Bot.getFriendMsg(this.e))) {
+      if (await adapter.connect(token, msg => this.reply(msg, true), () => Bot.getTextMsg(this.e))) {
         config.token.push(token)
         this.reply(`账号已连接，共${config.token.length}个账号`, true)
       } else {
