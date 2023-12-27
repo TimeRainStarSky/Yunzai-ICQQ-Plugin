@@ -38,15 +38,9 @@ const adapter = new class ICQQAdapter {
     }
 
     const bot = createClient(cfg)
-    const log = {
-      trace: log => logger.trace(`${logger.blue(`[${id}]`)} ${log}`),
-      debug: log => logger.debug(`${logger.blue(`[${id}]`)} ${log}`),
-      info: log => logger.info(`${logger.blue(`[${id}]`)} ${log}`),
-      mark: log => logger.mark(`${logger.blue(`[${id}]`)} ${log}`),
-      warn: log => logger.warn(`${logger.blue(`[${id}]`)} ${log}`),
-      error: log => logger.error(`${logger.blue(`[${id}]`)} ${log}`),
-      fatal: log => logger.fatal(`${logger.blue(`[${id}]`)} ${log}`),
-    }
+    const log = {}
+    for (const i of ["trace", "debug", "info", "mark", "warn", "error", "fatal"])
+      log[i] = (...args) => Bot.makeLog(i, args, id)
     bot.logger = log
     bot.core = core
 
