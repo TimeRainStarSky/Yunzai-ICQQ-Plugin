@@ -48,22 +48,77 @@ const adapter = new class ICQQAdapter {
     if (typeof get != "function") {
       getTips += `#Bot验证${id}:`
       get = () => new Promise(resolve =>
-        Bot.once(`verify.${id}`, data => resolve(data.msg)))
+        Bot.once(`verify.${id}`, data => {
+          send = data.reply
+          resolve(data.msg)
+        })
+      )
     }
 
     bot.on("system.login.qrcode", async data => {
-      send([`[${id}] 扫码完成后，${getTips}继续登录`, segment.image(data.image)])
+      send([
+        `[${id}] 扫码完成后，${getTips}继续登录`,
+        segment.image(data.image),
+      ])
       while (true) if (await get() == "继续登录") break
       bot.qrcodeLogin()
     })
 
     bot.on("system.login.slider", async data => {
-      send(`[${id}] 滑动验证完成后，${getTips}ticket\n${data.url}`)
-      bot.submitSlider(await get())
+      send(
+        `[${id}] 请选择滑动验证方式\n`+
+        `网页验证：${getTips}网页\n`+
+        `请求码验证：${getTips}请求码\n`+
+        `手动验证：${getTips}ticket\n`+
+        data.url
+      )
+      let msg = await get()
+      let fnc
+      if (msg == "网页") {
+        const url = `https://hlhs-nb.cn/captcha/slider?key=${id}`
+        await fetch(url, {
+          method: "POST",
+          body: JSON.stringify({ url: data.url }),
+        })
+        send(url)
+
+        fnc = async () => {
+          const res = await (await fetch(url, {
+            method: "POST",
+            body: JSON.stringify({ submit: id }),
+          })).json()
+          return res.data?.ticket
+        }
+      } else if (msg == "请求码") {
+        const url = data.url.replace("ssl.captcha.qq.com", "txhelper.glitch.me")
+        const code = await (await fetch(url)).text()
+        send(code)
+
+        fnc = async () => {
+          const res = await (await fetch(url)).text()
+          if (res != code) return res
+        }
+      } else {
+        return bot.submitSlider(msg)
+      }
+
+      let i = 0
+      while (true) {
+        await Bot.sleep(3000)
+        msg = await fnc()
+        if (msg) return bot.submitSlider(msg)
+        i++
+        if (i > 60) return send(`登录超时，发送 #Bot上线${id} 重新登录`)
+      }
     })
 
     bot.on("system.login.device", async data => {
-      send(`[${id}] 请选择设备锁验证方式\n短信验证：${getTips}短信\n扫码验证：扫码完成后，${getTips}继续登录\n${data.url}`)
+      send(
+        `[${id}] 请选择设备锁验证方式\n`+
+        `短信验证：${getTips}短信\n`+
+        `扫码验证：扫码完成后，${getTips}继续登录\n`+
+        data.url
+      )
       while (true) {
         const msg = await get()
         if (msg == "短信") {
