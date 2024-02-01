@@ -1,7 +1,7 @@
 logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
 import { config, configSave } from "./Model/config.js"
-import icqq from "icqq"
+import icqq from "./Model/icqq/lib/index.js"
 import { randomUUID } from "node:crypto"
 
 const adapter = new class ICQQAdapter {
@@ -26,7 +26,7 @@ const adapter = new class ICQQAdapter {
     }
   }
 
-  makeButton(button, style) {
+  makeButton(id, pick, button, style) {
     const msg = {
       id: randomUUID(),
       render_data: {
@@ -37,70 +37,71 @@ const adapter = new class ICQQAdapter {
       }
     }
 
-    if (button.input)
-      msg.action = {
-        type: 2,
-        permission: { type: 2 },
-        data: button.input,
-        enter: button.send,
-        ...button.ICQQ?.action,
-      }
-    else if (button.callback) {
-      if (config.toCallback) {
-        msg.action = {
-          type: 1,
-          permission: { type: 2 },
-          ...button.ICQQ?.action,
-        }
-        if (!Array.isArray(data._ret_id))
-          data._ret_id = []
-        data.bot.callback[msg.id] = {
-          id: data.message_id,
-          user_id: data.user_id,
-          group_id: data.group_id,
-          message: button.callback,
-          message_id: data._ret_id,
-        }
-        setTimeout(() => delete data.bot.callback[msg.id], 300000)
-      } else {
-        msg.action = {
-          type: 2,
-          permission: { type: 2 },
-          data: button.callback,
-          enter: true,
-          ...button.ICQQ?.action,
-        }
-      }
-    } else if (button.link)
+    if (button.link)
       msg.action = {
         type: 0,
         permission: { type: 2 },
         data: button.link,
         ...button.ICQQ?.action,
       }
-    else return false
+    else if (config.toCallback && (button.input || button.callback))
+      for (const i of Bot.uin)
+        if (Bot[i].adapter?.id == "QQBot" && Bot[i].sdk?.config?.appid && Bot[i].callback) {
+          msg.action = {
+            type: 1,
+            permission: { type: 2 },
+            ...button.ICQQ?.action,
+          }
+          this.markdown_appid = Number(Bot[i].sdk.config.appid)
+          Bot[i].callback[msg.id] = {
+            self_id: id,
+            user_id: pick.user_id,
+            group_id: pick.group_id,
+            message: button.input || button.callback,
+          }
+          break
+        }
+
+    if (!msg.action) {
+      if (button.input)
+        msg.action = {
+          type: 2,
+          permission: { type: 2 },
+          data: button.input,
+          enter: button.send,
+          ...button.ICQQ?.action,
+        }
+      else if (button.callback) {
+        if (!msg.action)
+          msg.action = {
+            type: 2,
+            permission: { type: 2 },
+            data: button.callback,
+            enter: true,
+            ...button.ICQQ?.action,
+          }
+      } else return false
+    }
 
     if (button.permission) {
       if (button.permission == "admin") {
         msg.action.permission.type = 1
       } else {
         msg.action.permission.type = 0
-        if (!Array.isArray(button.permission))
-          button.permission = [button.permission]
-        msg.action.permission.specify_user_ids = button.permission
+        msg.action.permission.specify_user_ids = String(button.permission)
       }
     }
     return msg
   }
 
-  makeButtons(button_square) {
+  makeButtons(id, pick, button_square) {
     const msgs = []
     const random = Math.floor(Math.random()*2)
     for (const button_row of button_square) {
       let column = 0
       const buttons = []
       for (let button of button_row) {
-        button = this.makeButton(button,
+        button = this.makeButton(id, pick, button,
           (random+msgs.length+buttons.length)%2)
         if (button) buttons.push(button)
       }
@@ -110,7 +111,7 @@ const adapter = new class ICQQAdapter {
     return msgs
   }
 
-  async makeMarkdownMsg(id, msg) {
+  async makeMarkdownMsg(id, pick, msg) {
     const messages = []
     let content = ""
     const button = []
@@ -152,14 +153,14 @@ const adapter = new class ICQQAdapter {
           content += i.data
           break
         case "button":
-          button.push(...this.makeButtons(i.data))
+          button.push(...this.makeButtons(id, pick, i.data))
           break
         case "reply":
           reply = i
           continue
         case "node":
           for (const node of i.data)
-            for (const message of await this.makeMarkdownMsg(id, node.message))
+            for (const message of await this.makeMarkdownMsg(id, pick, node.message))
               forward.push({ ...node, ...message })
           continue
         case "raw":
@@ -176,47 +177,52 @@ const adapter = new class ICQQAdapter {
     if (button.length) {
       for (const i of messages) {
         if (i[0].type == "markdown")
-          i.push({ type: "button", content: { rows: button.splice(0,5) }})
+          i.push({ type: "button", content: {
+            appid: this.markdown_appid,
+            rows: button.splice(0,5),
+          }})
         if (!button.length) break
       }
       while (button.length) {
         messages.push([
           { type: "markdown", content: " " },
-          { type: "button", content: { rows: button.splice(0,5) }},
+          { type: "button", content: {
+            appid: this.markdown_appid,
+            rows: button.splice(0,5),
+          }},
         ])
       }
     }
 
-    console.log(messages)
     for (const i of messages)
       forward.push({ type: "node", message: i })
     return forward
   }
 
-  async makeMsg(id, msg) {
+  async makeMsg(id, pick, msg) {
     if (!Array.isArray(msg))
       msg = [msg]
     if (config.toMarkdown)
-      return this.makeMarkdownMsg(id, msg)
+      return this.makeMarkdownMsg(id, pick, msg)
 
     const msgs = []
     for (let i of msg) {
       if (typeof i == "object") switch (i.type) {
         case "markdown":
-          msgs.push(...(await this.makeMarkdownMsg(id, msg)))
+          msgs.push(...(await this.makeMarkdownMsg(id, pick, msg)))
           continue
         case "button":
           if (config.toButton) {
             if (config.toButton == "direct")
               msgs.push({ type: "button", content: { rows: this.makeButtons(i.data) }})
             else
-              return this.makeMarkdownMsg(id, msg)
+              return this.makeMarkdownMsg(id, pick, msg)
           }
           continue
         case "node":
           for (const node of i.data)
             msgs.push({ ...node, type: "node",
-              message: await this.makeMsg(id, node.message) })
+              message: await this.makeMsg(id, pick, node.message) })
           continue
       }
       msgs.push(i)
@@ -227,13 +233,22 @@ const adapter = new class ICQQAdapter {
   getPick(id, pick, target, prop, receiver) {
     switch (prop) {
       case "sendMsg":
-        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, msg), ...args)
+        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, pick, msg), ...args)
       case "makeForwardMsg":
         return Bot.makeForwardMsg
       case "sendForwardMsg":
-        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, await Bot.makeForwardMsg(msg)), ...args)
+        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, pick, await Bot.makeForwardMsg(msg)), ...args)
       case "getInfo":
         return () => pick.info
+      case "pickMember":
+        return (...args) => {
+          for (const i in args)
+            args[i] = Number(args[i]) || args[i]
+          const pickMember = pick[prop](...args)
+          return new Proxy({}, {
+            get: (target, prop, receiver) => this.getPick(id, pickMember, target, prop, receiver),
+          })
+        }
     }
     return target[prop] ?? pick[prop]
   }
@@ -245,6 +260,8 @@ const adapter = new class ICQQAdapter {
       case "pickGroup":
       case "pickMember":
         return (...args) => {
+          for (const i in args)
+            args[i] = Number(args[i]) || args[i]
           const pick = target.sdk[prop](...args)
           return new Proxy({}, {
             get: (target, prop, receiver) => this.getPick(id, pick, target, prop, receiver),

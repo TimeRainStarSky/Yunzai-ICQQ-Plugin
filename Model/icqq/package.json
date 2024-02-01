@@ -1,0 +1,50 @@
+{
+  "name": "icqq",
+  "version": "0.6.8",
+  "upday": "2024/2/1",
+  "description": "QQ protocol for NodeJS!",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc && cp -r src/core/protobuf/*.min.* lib/core/protobuf",
+    "build_": "tsc && copy .\\src\\core\\protobuf\\*.min.* lib\\core\\protobuf",
+    "lint": "prettier --check ./**/*.{ts,js,vue}",
+    "lint:fix": "prettier --write ./**/*.{ts,js,vue,md}",
+    "docs": "typedoc src/index.ts",
+    "dev": "ts-node src/test.ts",
+    "pub": "npm publish --access public",
+    "clean": "rm -rf lib"
+  },
+  "engines": {
+    "node": ">= v14"
+  },
+  "repository": "https://github.com/icqqjs/icqq",
+  "keywords": [
+    "qq",
+    "icqq",
+    "protocol",
+    "android",
+    "bot",
+    "coolq"
+  ],
+  "author": "icqqjs",
+  "license": "MPL-2.0",
+  "bugs": "https://github.com/icqqjs/icqq/issues",
+  "homepage": "https://github.com/icqqjs/icqq#readme",
+  "changelogs": "https://github.com/icqqjs/icqq/blob/main/CHANGELOG.md",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "log4js": "^6.9.1",
+    "long": "^5.2.3",
+    "pngjs": "^7.0.0",
+    "probe-image-size": "^7.2.3",
+    "silk-wasm": "^3.2.2",
+    "triptrap": "^0.0.17"
+  },
+  "files": [
+    "/lib/**/*.js",
+    "/lib/**/*.d.ts",
+    "/LICENSE",
+    "/README.md"
+  ]
+}

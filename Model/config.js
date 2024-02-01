@@ -10,6 +10,7 @@ const config = {
   permission: "master",
   toMarkdown: false,
   toButton: false,
+  toCallback: true,
   bot: {},
   token: []
 }
@@ -33,5 +34,11 @@ if (YAML.stringify(config) != YAML.stringify(configData))
   configSave(config)
 
 config.package = JSON.parse(fs.readFileSync("plugins/ICQQ-Plugin/package.json", "utf-8"))
+const icqq = JSON.parse(fs.readFileSync("plugins/ICQQ-Plugin/Model/icqq/package.json", "utf-8"))
+config.package.dependencies = {
+  icqq: icqq.version,
+  ...icqq.dependencies,
+  ...config.package.dependencies,
+}
 
 export { config, configSave }
