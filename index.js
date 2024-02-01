@@ -13,8 +13,9 @@ const adapter = new class ICQQAdapter {
 
   async uploadImage(id, file) {
     const image = new Bot[id].icqq.Image(segment.image(file))
-    await Bot[id].pickGroup().uploadImages([image])
-    image.url = Bot[id].icqq.getGroupImageUrl(image.md5.toString("hex"))
+    image.upload = await Bot[id].pickGroup(Math.ceil(Math.random()*10**9)).uploadImages([image])
+    if (image.upload[0].status == "fulfilled")
+      image.url = Bot[id].icqq.getGroupImageUrl(image.md5.toString("hex"))
     return image
   }
 
