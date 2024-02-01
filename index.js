@@ -1,8 +1,8 @@
 logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
 import { config, configSave } from "./Model/config.js"
-import { createClient, core } from "icqq"
-import common from "../../lib/common/common.js"
+import icqq from "icqq"
+import { randomUUID } from "node:crypto"
 
 const adapter = new class ICQQAdapter {
   constructor() {
@@ -11,10 +11,256 @@ const adapter = new class ICQQAdapter {
     this.version = config.package.dependencies.icqq.replace("^", "v")
   }
 
+  async uploadImage(id, file) {
+    const image = new Bot[id].icqq.Image(segment.image(file))
+    await Bot[id].pickGroup().uploadImages([image])
+    image.url = Bot[id].icqq.getGroupImageUrl(image.md5.toString("hex"))
+    return image
+  }
+
+  async makeMarkdownImage(id, file) {
+    const image = await Bot[id].uploadImage(file)
+    return {
+      des: `![图片 #${image.width || 0}px #${image.height || 0}px]`,
+      url: `(${image.url})`,
+    }
+  }
+
+  makeButton(button, style) {
+    const msg = {
+      id: randomUUID(),
+      render_data: {
+        label: button.text,
+        visited_label: button.clicked_text,
+        style,
+        ...button.ICQQ?.render_data,
+      }
+    }
+
+    if (button.input)
+      msg.action = {
+        type: 2,
+        permission: { type: 2 },
+        data: button.input,
+        enter: button.send,
+        ...button.ICQQ?.action,
+      }
+    else if (button.callback) {
+      if (config.toCallback) {
+        msg.action = {
+          type: 1,
+          permission: { type: 2 },
+          ...button.ICQQ?.action,
+        }
+        if (!Array.isArray(data._ret_id))
+          data._ret_id = []
+        data.bot.callback[msg.id] = {
+          id: data.message_id,
+          user_id: data.user_id,
+          group_id: data.group_id,
+          message: button.callback,
+          message_id: data._ret_id,
+        }
+        setTimeout(() => delete data.bot.callback[msg.id], 300000)
+      } else {
+        msg.action = {
+          type: 2,
+          permission: { type: 2 },
+          data: button.callback,
+          enter: true,
+          ...button.ICQQ?.action,
+        }
+      }
+    } else if (button.link)
+      msg.action = {
+        type: 0,
+        permission: { type: 2 },
+        data: button.link,
+        ...button.ICQQ?.action,
+      }
+    else return false
+
+    if (button.permission) {
+      if (button.permission == "admin") {
+        msg.action.permission.type = 1
+      } else {
+        msg.action.permission.type = 0
+        if (!Array.isArray(button.permission))
+          button.permission = [button.permission]
+        msg.action.permission.specify_user_ids = button.permission
+      }
+    }
+    return msg
+  }
+
+  makeButtons(button_square) {
+    const msgs = []
+    const random = Math.floor(Math.random()*2)
+    for (const button_row of button_square) {
+      let column = 0
+      const buttons = []
+      for (let button of button_row) {
+        button = this.makeButton(button,
+          (random+msgs.length+buttons.length)%2)
+        if (button) buttons.push(button)
+      }
+      if (buttons.length)
+        msgs.push({ buttons })
+    }
+    return msgs
+  }
+
+  async makeMarkdownMsg(id, msg) {
+    const messages = []
+    let content = ""
+    const button = []
+    let reply
+    const forward = []
+
+    for (let i of msg) {
+      if (typeof i == "object")
+        i = { ...i }
+      else
+        i = { type: "text", text: i }
+
+      switch (i.type) {
+        case "record":
+        case "video":
+        case "xml":
+        case "json":
+        case "face":
+          messages.push([i])
+          break
+        case "file":
+          if (i.file) i.file = await Bot.fileToUrl(i.file, i)
+          content += `文件：${i.file}`
+          break
+        case "at":
+          if (i.qq == "all")
+            content += "[@全体成员](mqqapi://markdown/mention?at_type=everyone)"
+          else
+            content += `[@${i.name || i.qq}](mqqapi://markdown/mention?at_type=1&at_tinyid=${i.qq})`
+          break
+        case "text":
+          content += i.text
+          break
+        case "image": {
+          const { des, url } = await this.makeMarkdownImage(id, i.file)
+          content += `${des}${url}`
+          break
+        } case "markdown":
+          content += i.data
+          break
+        case "button":
+          button.push(...this.makeButtons(i.data))
+          break
+        case "reply":
+          reply = i
+          continue
+        case "node":
+          for (const node of i.data)
+            for (const message of await this.makeMarkdownMsg(id, node.message))
+              forward.push({ ...node, ...message })
+          continue
+        case "raw":
+          messages.push([i.data])
+          break
+        default:
+          content += JSON.stringify(i)
+      }
+    }
+
+    if (content)
+      messages.unshift([{ type: "markdown", content }])
+
+    if (button.length) {
+      for (const i of messages) {
+        if (i[0].type == "markdown")
+          i.push({ type: "button", content: { rows: button.splice(0,5) }})
+        if (!button.length) break
+      }
+      while (button.length) {
+        messages.push([
+          { type: "markdown", content: " " },
+          { type: "button", content: { rows: button.splice(0,5) }},
+        ])
+      }
+    }
+
+    console.log(messages)
+    for (const i of messages)
+      forward.push({ type: "node", message: i })
+    return forward
+  }
+
+  async makeMsg(id, msg) {
+    if (!Array.isArray(msg))
+      msg = [msg]
+    if (config.toMarkdown)
+      return this.makeMarkdownMsg(id, msg)
+
+    const msgs = []
+    for (let i of msg) {
+      if (typeof i == "object") switch (i.type) {
+        case "markdown":
+          msgs.push(...(await this.makeMarkdownMsg(id, msg)))
+          continue
+        case "button":
+          if (config.toButton) {
+            if (config.toButton == "direct")
+              msgs.push({ type: "button", content: { rows: this.makeButtons(i.data) }})
+            else
+              return this.makeMarkdownMsg(id, msg)
+          }
+          continue
+        case "node":
+          for (const node of i.data)
+            msgs.push({ ...node, type: "node",
+              message: await this.makeMsg(id, node.message) })
+          continue
+      }
+      msgs.push(i)
+    }
+    return msgs
+  }
+
+  getPick(id, pick, target, prop, receiver) {
+    switch (prop) {
+      case "sendMsg":
+        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, msg), ...args)
+      case "makeForwardMsg":
+        return Bot.makeForwardMsg
+      case "sendForwardMsg":
+        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, await Bot.makeForwardMsg(msg)), ...args)
+      case "getInfo":
+        return () => pick.info
+    }
+    return target[prop] ?? pick[prop]
+  }
+
+  getBot(id, target, prop, receiver) {
+    switch (prop) {
+      case "pickUser":
+      case "pickFriend":
+      case "pickGroup":
+      case "pickMember":
+        return (...args) => {
+          const pick = target.sdk[prop](...args)
+          return new Proxy({}, {
+            get: (target, prop, receiver) => this.getPick(id, pick, target, prop, receiver),
+          })
+        }
+    }
+    return target[prop] ?? target.sdk[prop]
+  }
+
   makeEvent(data) {
-    for (const i of [data.friend, data.group, data.member]) {
-      if (typeof i != "object") continue
-      if (!i.getInfo) i.getInfo = () => i.info
+    for (const i of ["friend", "group", "member"]) {
+      if (typeof data[i] != "object") continue
+      const pick = data[i]
+      data[i] = new Proxy({}, {
+        get: (target, prop, receiver) => this.getPick(data.self_id, pick, target, prop, receiver),
+      })
     }
   }
 
@@ -37,12 +283,11 @@ const adapter = new class ICQQAdapter {
       }
     }
 
-    const bot = createClient(cfg)
+    const bot = icqq.createClient(cfg)
     const log = {}
     for (const i of ["trace", "debug", "info", "mark", "warn", "error", "fatal"])
       log[i] = (...args) => Bot.makeLog(i, args, id)
     bot.logger = log
-    bot.core = core
 
     let getTips = "发送 "
     if (typeof get != "function") {
@@ -72,7 +317,7 @@ const adapter = new class ICQQAdapter {
         `手动验证：${getTips}ticket\n`+
         data.url
       )
-      let msg = await get()
+      const msg = await get()
       let fnc
       if (msg == "网页") {
         const url = `https://hlhs-nb.cn/captcha/slider?key=${id}`
@@ -105,7 +350,7 @@ const adapter = new class ICQQAdapter {
       let i = 0
       while (true) {
         await Bot.sleep(3000)
-        msg = await fnc()
+        const msg = await fnc()
         if (msg) return bot.submitSlider(msg)
         i++
         if (i > 60) return send(`登录超时，发送 #Bot上线${id} 重新登录`)
@@ -133,41 +378,53 @@ const adapter = new class ICQQAdapter {
       }
     })
 
-    bot.on("system.login.error", data => send(`[${id}] 登录错误：${data.message}(${data.code})\n发送 #Bot上线${id} 重新登录`))
-    bot.on("system.offline", data => send(`[${id}] 账号下线：${data.message}\n发送 #Bot上线${id} 重新登录`))
+    bot.on("system.login.error", data => send(
+      `[${id}] 登录错误：${data.message}(${data.code})\n`+
+      `发送 #Bot上线${id} 重新登录`
+    ))
+    bot.on("system.offline", data => send(
+      `[${id}] 账号下线：${data.message}\n`+
+      `发送 #Bot上线${id} 重新登录`
+    ))
     bot.on("system.online", () => bot.logger = log)
 
-    Bot[id] = bot
+    Bot[id] = new Proxy({
+      adapter: this,
+      sdk: bot,
+      icqq,
+      version: {
+        id: this.id,
+        name: this.name,
+        version: this.version,
+      },
+      uploadImage: file => this.uploadImage(id, file),
+    }, {
+      get: (target, prop, receiver) => this.getBot(id, target, prop, receiver),
+    })
     await new Promise(resolve => {
       bot.once("system.online", resolve)
       bot.login(id, password)
     })
 
-    Bot[id].adapter = this
-    Bot[id].avatar = Bot[id].pickFriend(id).getAvatarUrl()
-    Bot[id].version = {
-      id: this.id,
-      name: this.name,
-      version: this.version,
-    }
+    Bot[id].avatar = bot.pickFriend(id).getAvatarUrl()
 
-    Bot[id].on("message", data => {
+    bot.on("message", data => {
       this.makeEvent(data)
       Bot.em(`${data.post_type}.${data.message_type}.${data.sub_type}`, data)
     })
 
-    Bot[id].on("notice", data => {
+    bot.on("notice", data => {
       this.makeEvent(data)
       Bot.em(`${data.post_type}.${data.notice_type}.${data.sub_type}`, data)
     })
 
-    Bot[id].on("request", data => {
+    bot.on("request", data => {
       this.makeEvent(data)
       Bot.em(`${data.post_type}.${data.request_type}.${data.sub_type}`, data)
     })
 
     for (const i of ["internal.input", "sync"])
-      Bot[id].on(i, data => {
+      bot.on(i, data => {
         data.self_id = id
         Bot.em(i, data)
       })
