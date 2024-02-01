@@ -60,6 +60,7 @@ const adapter = new class ICQQAdapter {
             group_id: pick.group_id,
             message: button.input || button.callback,
           }
+          setTimeout(() => delete Bot[i].callback[msg.id], 3600000)
           break
         }
 
