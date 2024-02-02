@@ -34,7 +34,7 @@ const adapter = new class ICQQAdapter {
     return text
   }
 
-  makeButton(id, pick, button, style) {
+  makeButton(id, pick, button, style, forward) {
     const msg = {
       id: randomUUID(),
       render_data: {
@@ -52,14 +52,29 @@ const adapter = new class ICQQAdapter {
         data: button.link,
         ...button.ICQQ?.action,
       }
-    else if (config.markdown.callback && (button.input || button.callback))
+    else if (button.input)
+      msg.action = {
+        type: 2,
+        permission: { type: 2 },
+        data: button.input,
+        enter: button.send,
+        ...button.ICQQ?.action,
+      }
+    else if (button.callback)
+      msg.action = {
+        type: 2,
+        permission: { type: 2 },
+        data: button.callback,
+        enter: true,
+        ...button.ICQQ?.action,
+      }
+    else return false
+
+    if (forward && config.markdown.callback && (button.input || button.callback))
       for (const i of Bot.uin)
         if (Bot[i].adapter?.id == "QQBot" && Bot[i].sdk?.config?.appid && Bot[i].callback) {
-          msg.action = {
-            type: 1,
-            permission: { type: 2 },
-            ...button.ICQQ?.action,
-          }
+          msg.action.type = 1
+          delete msg.action.data
           this.markdown_appid = Number(Bot[i].sdk.config.appid)
           Bot[i].callback[msg.id] = {
             self_id: id,
@@ -70,27 +85,6 @@ const adapter = new class ICQQAdapter {
           setTimeout(() => delete Bot[i].callback[msg.id], 3600000)
           break
         }
-
-    if (!msg.action) {
-      if (button.input)
-        msg.action = {
-          type: 2,
-          permission: { type: 2 },
-          data: button.input,
-          enter: button.send,
-          ...button.ICQQ?.action,
-        }
-      else if (button.callback) {
-        if (!msg.action)
-          msg.action = {
-            type: 2,
-            permission: { type: 2 },
-            data: button.callback,
-            enter: true,
-            ...button.ICQQ?.action,
-          }
-      } else return false
-    }
 
     if (button.permission) {
       if (button.permission == "admin") {
@@ -103,7 +97,7 @@ const adapter = new class ICQQAdapter {
     return msg
   }
 
-  makeButtons(id, pick, button_square) {
+  makeButtons(id, pick, button_square, forward) {
     const msgs = []
     const random = Math.floor(Math.random()*2)
     for (const button_row of button_square) {
@@ -111,7 +105,7 @@ const adapter = new class ICQQAdapter {
       const buttons = []
       for (let button of button_row) {
         button = this.makeButton(id, pick, button,
-          (random+msgs.length+buttons.length)%2)
+          (random+msgs.length+buttons.length)%2, forward)
         if (button) buttons.push(button)
       }
       if (buttons.length)
@@ -124,7 +118,6 @@ const adapter = new class ICQQAdapter {
     const messages = []
     let content = ""
     const button = []
-    let reply
     const forward = []
 
     for (let i of msg) {
@@ -136,6 +129,7 @@ const adapter = new class ICQQAdapter {
       switch (i.type) {
         case "record":
         case "video":
+        case "reply":
         case "xml":
         case "json":
         case "face":
@@ -162,18 +156,15 @@ const adapter = new class ICQQAdapter {
           content += i.data
           break
         case "button":
-          button.push(...this.makeButtons(id, pick, i.data))
+          button.push(...this.makeButtons(id, pick, i.data, true))
           break
-        case "reply":
-          reply = i
-          continue
         case "node":
           for (const node of i.data)
             for (const message of await this.makeMarkdownMsg(id, pick, node.message))
               forward.push({ ...node, ...message })
-          continue
+          break
         case "raw":
-          messages.push([i.data])
+          messages.push([i])
           break
         default:
           content += this.makeMarkdownText(JSON.stringify(i))
@@ -211,42 +202,118 @@ const adapter = new class ICQQAdapter {
   async makeMsg(id, pick, msg) {
     if (!Array.isArray(msg))
       msg = [msg]
-    if (config.markdown.global)
-      return this.makeMarkdownMsg(id, pick, msg)
+    const message = []
+    const messages = []
+    const forward = []
+    let reply
 
-    const msgs = []
     for (let i of msg) {
       if (typeof i == "object") switch (i.type) {
+        case "record":
+        case "video":
+        case "xml":
+        case "json":
+          messages.push([i])
+          continue
+        case "file":
+          await pick.sendFile(i.file, i.name)
+          continue
+        case "reply":
+          reply = i
+          continue
         case "markdown":
-          msgs.push(...(await this.makeMarkdownMsg(id, pick, msg)))
+          forward.push(...(await this.makeMarkdownMsg(id, pick, msg)))
           continue
         case "button":
           if (config.markdown.button) {
-            if (config.markdown.button == "direct")
-              msgs.push({ type: "button", content: { rows: this.makeButtons(i.data) }})
+            if (config.markdown.button == "direct" || config.markdown.mode == "mix")
+              message.push({
+                type: "button",
+                appid: this.markdown_appid,
+                content: { rows: this.makeButtons(id, pick, i.data)},
+              })
             else
               return this.makeMarkdownMsg(id, pick, msg)
           }
           continue
         case "node":
           for (const node of i.data)
-            msgs.push({ ...node, type: "node",
+            forward.push({ ...node, type: "node",
               message: await this.makeMsg(id, pick, node.message) })
           continue
       }
-      msgs.push(i)
+      message.push(i)
     }
+
+    if (message.length)
+      messages.push(message)
+    if (forward.length)
+      messages.push(forward)
+    if (reply) for (const i of messages)
+      i.unshift(reply)
+    return messages
+  }
+
+  async sendMsg(id, pick, msg, ...args) {
+    const rets = { message_id: [], data: [] }
+    let msgs
+
+    const sendMsg = async () => { for (const i of msgs) try {
+      Bot.makeLog("debug", ["发送消息", i], id)
+      const ret = await pick.sendMsg(i, ...args)
+      Bot.makeLog("debug", ["发送消息返回", ret], id)
+
+      rets.data.push(ret)
+      if (ret.message_id)
+        rets.message_id.push(ret.message_id)
+    } catch (err) {
+      Bot.makeLog("error", ["发送消息错误：", i, err], id)
+      return false
+    }}
+
+    if (config.markdown.mode) {
+      if (config.markdown.mode == "mix")
+        msgs = [
+          await this.makeMarkdownMsg(id, pick, msg),
+          ...await this.makeMsg(id, pick, msg),
+        ]
+      else
+        msgs = [await this.makeMarkdownMsg(id, pick, msg)]
+    } else {
+      msgs = await this.makeMsg(id, pick, msg)
+    }
+
+    if (await sendMsg() === false) {
+      msgs = await this.makeMsg(id, pick,
+        await Bot.makeForwardMsg([{ message: msg }]))
+      await sendMsg()
+    }
+
+    if (rets.data.length == 1)
+      return rets.data[0]
+    return rets
+  }
+
+  async recallMsg(id, pick, message_id) {
+    Bot.makeLog("info", `撤回消息：${message_id}`, id)
+    if (!Array.isArray(message_id))
+      message_id = [message_id]
+    const msgs = []
+    for (const i of message_id)
+      msgs.push(await pick.recallMsg(i))
     return msgs
   }
 
   getPick(id, pick, target, prop, receiver) {
     switch (prop) {
       case "sendMsg":
-        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, pick, msg), ...args)
+        return (...args) => this.sendMsg(id, pick, ...args)
+      case "recallMsg":
+        return message_id => this.recallMsg(id, pick, message_id)
       case "makeForwardMsg":
         return Bot.makeForwardMsg
       case "sendForwardMsg":
-        return async (msg, ...args) => pick.sendMsg(await this.makeMsg(id, pick, await Bot.makeForwardMsg(msg)), ...args)
+        return async (msg, ...args) => this.sendMsg(id, pick, await Bot.makeForwardMsg(msg), ...args)
       case "getInfo":
         return () => pick.info
       case "pickMember":
@@ -515,12 +582,12 @@ export class ICQQAdapter extends plugin {
         return false
       }
     }
-    configSave(config)
+    configSave()
   }
 
   SignUrl() {
     config.bot.sign_api_addr = this.e.msg.replace(/^#[Qq]+签名/, "").trim()
-    configSave(config)
+    configSave()
     this.reply("签名已设置，重启后生效", true)
   }
 }

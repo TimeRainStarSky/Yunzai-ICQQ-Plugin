@@ -3,19 +3,18 @@ import YAML from "yaml"
 import _ from "lodash"
 
 const configFile = "config/ICQQ.yaml"
-const configSave = config => fs.writeFileSync(configFile, YAML.stringify({ ...config, package: undefined }), "utf-8")
-
 const config = {
   tips: "",
   permission: "master",
   markdown: {
-    global: false,
+    mode: false,
     button: true,
     callback: true,
   },
   bot: {},
   token: []
 }
+const configSave = () => fs.writeFileSync(configFile, YAML.stringify({ ...config, package: undefined }), "utf-8")
 
 let configData
 

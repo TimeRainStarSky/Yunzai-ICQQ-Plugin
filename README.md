@@ -33,3 +33,9 @@ TRSS-Yunzai ICQQ Bot 适配器 插件
 - #QQ账号
 - #QQ设置 + `QQ号:密码(留空扫码):登录设备:版本号/独立签名地址`
 - #QQ签名 + `签名服务器地址`
+
+## Markdown 配置
+
+- mode：消息是否转为 Markdown 发送，`mix` 混合发送
+- button：按钮是否转为 Markdown 发送，`direct` 直接发送
+- callback：是否发送回调按钮，需要配置 [QQBot](../../../Yunzai-QQBot-Plugin) 接收回调
