@@ -27,6 +27,13 @@ const adapter = new class ICQQAdapter {
     }
   }
 
+  makeMarkdownText(text) {
+    const match = text.match(/https?:\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/g)
+    if (match) for (const url of match)
+      text = text.replace(url, `<${url}>`)
+    return text
+  }
+
   makeButton(id, pick, button, style) {
     const msg = {
       id: randomUUID(),
@@ -136,7 +143,7 @@ const adapter = new class ICQQAdapter {
           break
         case "file":
           if (i.file) i.file = await Bot.fileToUrl(i.file, i)
-          content += `文件：${i.file}`
+          content += this.makeMarkdownText(`文件：${i.file}`)
           break
         case "at":
           if (i.qq == "all")
@@ -145,7 +152,7 @@ const adapter = new class ICQQAdapter {
             content += `[@${i.name || i.qq}](mqqapi://markdown/mention?at_type=1&at_tinyid=${i.qq})`
           break
         case "text":
-          content += i.text
+          content += this.makeMarkdownText(i.text)
           break
         case "image": {
           const { des, url } = await this.makeMarkdownImage(id, i.file)
@@ -169,7 +176,7 @@ const adapter = new class ICQQAdapter {
           messages.push([i.data])
           break
         default:
-          content += JSON.stringify(i)
+          content += this.makeMarkdownText(JSON.stringify(i))
       }
     }
 
