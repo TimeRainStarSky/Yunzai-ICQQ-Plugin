@@ -45,7 +45,7 @@ const adapter = new class ICQQAdapter {
         data: button.link,
         ...button.ICQQ?.action,
       }
-    else if (config.toCallback && (button.input || button.callback))
+    else if (config.markdown.callback && (button.input || button.callback))
       for (const i of Bot.uin)
         if (Bot[i].adapter?.id == "QQBot" && Bot[i].sdk?.config?.appid && Bot[i].callback) {
           msg.action = {
@@ -204,7 +204,7 @@ const adapter = new class ICQQAdapter {
   async makeMsg(id, pick, msg) {
     if (!Array.isArray(msg))
       msg = [msg]
-    if (config.toMarkdown)
+    if (config.markdown.global)
       return this.makeMarkdownMsg(id, pick, msg)
 
     const msgs = []
@@ -214,8 +214,8 @@ const adapter = new class ICQQAdapter {
           msgs.push(...(await this.makeMarkdownMsg(id, pick, msg)))
           continue
         case "button":
-          if (config.toButton) {
-            if (config.toButton == "direct")
+          if (config.markdown.button) {
+            if (config.markdown.button == "direct")
               msgs.push({ type: "button", content: { rows: this.makeButtons(i.data) }})
             else
               return this.makeMarkdownMsg(id, pick, msg)

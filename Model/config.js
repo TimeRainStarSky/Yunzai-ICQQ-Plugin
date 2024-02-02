@@ -8,9 +8,11 @@ const configSave = config => fs.writeFileSync(configFile, YAML.stringify({ ...co
 const config = {
   tips: "",
   permission: "master",
-  toMarkdown: false,
-  toButton: false,
-  toCallback: true,
+  markdown: {
+    global: false,
+    button: true,
+    callback: true,
+  },
   bot: {},
   token: []
 }
