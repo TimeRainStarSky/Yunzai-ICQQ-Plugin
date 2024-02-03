@@ -200,8 +200,6 @@ const adapter = new class ICQQAdapter {
   }
 
   async makeMsg(id, pick, msg) {
-    if (!Array.isArray(msg))
-      msg = [msg]
     const message = []
     const messages = []
     const forward = []
@@ -255,6 +253,8 @@ const adapter = new class ICQQAdapter {
   }
 
   async sendMsg(id, pick, msg, ...args) {
+    if (!Array.isArray(msg))
+      msg = [msg]
     const rets = { message_id: [], data: [] }
     let msgs
 
