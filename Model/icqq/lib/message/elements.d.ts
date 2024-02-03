@@ -240,11 +240,6 @@ export interface FileElem {
     /** 存在时间 */
     duration: number;
 }
-/** 原始格式 */
-export interface RawElem {
-    type: "raw";
-    data: any;
-}
 /** @deprecated @cqhttp 旧版引用回复，仅做一定程度的兼容 */
 export interface ReplyElem {
     type: "reply";
@@ -289,8 +284,14 @@ export interface Forwardable {
 export interface ForwardNode extends Forwardable {
     type: 'node';
 }
+/** 原始格式 */
+export interface RawElem {
+    type: "raw";
+    data: any;
+}
 /** 可组合发送的元素 */
-export type ChainElem = TextElem | FaceElem | BfaceElem | MfaceElem | ImageElem | AtElem | MiraiElem | MarkdownElem | ButtonElem | RawElem;
+export type ChainElem = TextElem | FaceElem | BfaceElem | MfaceElem | ImageElem | AtElem | MiraiElem | ReplyElem | ForwardNode | QuoteElem | MarkdownElem | ButtonElem | RawElem;
+export declare const ChainElemTypes: ChainElem["type"][];
 /** 注意：只有`ChainElem`中的元素可以组合发送，其他元素只能单独发送 */
 export type MessageElem = TextElem | FaceElem | BfaceElem | MfaceElem | ImageElem | AtElem | MiraiElem | ReplyElem | FlashElem | PttElem | VideoElem | JsonElem | XmlElem | PokeElem | LocationElem | ShareElem | MusicElem | FileElem | ForwardNode | QuoteElem | MarkdownElem | ButtonElem | RawElem;
 /** 可通过`sendMsg`发送的类型集合 (字符串、元素对象，或它们的数组) */
@@ -327,8 +328,6 @@ export declare const segment: {
     button(content: ButtonElem["content"]): ButtonElem;
     /** 一种特殊消息(官方客户端无法解析) */
     mirai(data: string): MiraiElem;
-    /** 原始消息 */
-    raw(data: any): RawElem;
     /** 音乐 */
     music(id: string, platform?: MusicPlatform): Promise<JsonElem>;
     fake(user_id: number, message: Sendable, nickname?: string, time?: number): ForwardNode;
@@ -340,4 +339,6 @@ export declare const segment: {
     poke(id: number): PokeElem;
     /** @deprecated 将CQ码转换为消息链 */
     fromCqcode(str: string): MessageElem[];
+    /** 原始消息 */
+    raw(data: any): RawElem;
 };

@@ -231,7 +231,7 @@ const adapter = new class ICQQAdapter {
                 content: { rows: this.makeButtons(id, pick, i.data)},
               })
             else
-              return this.makeMarkdownMsg(id, pick, msg)
+              return [await this.makeMarkdownMsg(id, pick, msg)]
           }
           continue
         case "node":

@@ -53,7 +53,6 @@ export declare class Converter {
     private button;
     private mirai;
     private file;
-    private raw;
     private reply;
     /** 转换为分片消息 */
     toFragments(): Uint8Array[];
@@ -63,4 +62,5 @@ export declare class Converter {
     anonymize(anon: Omit<Anonymous, "flag">): void;
     /** 引用回复 */
     quote(source: Quotable): void;
+    private raw;
 }

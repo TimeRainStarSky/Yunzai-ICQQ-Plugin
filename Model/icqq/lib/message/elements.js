@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.segment = void 0;
+exports.segment = exports.ChainElemTypes = void 0;
 const music_1 = require("./music");
+exports.ChainElemTypes = ["text", "at", "face", "sface", "bface", "rps", "dice", "image", "markdown", "button", "mirai", "reply", "quote", "node", "raw"];
 /** 用于构造消息元素 */
 exports.segment = {
     /** @deprecated 文本，建议直接使用字符串 */
@@ -104,12 +105,6 @@ exports.segment = {
             type: "mirai", data
         };
     },
-    /** 原始消息 */
-    raw(data) {
-        return {
-            type: "raw", data
-        };
-    },
     /** 音乐 */
     async music(id, platform = 'qq') {
         const musiInfo = await music_1.musicFactory[platform].getMusicInfo(id);
@@ -158,6 +153,10 @@ exports.segment = {
                 elems.push({ type: "text", text });
         }
         return elems;
+    },
+    /** 原始消息 */
+    raw(data) {
+        return { type: "raw", data };
     }
 };
 function unescapeCQ(s) {

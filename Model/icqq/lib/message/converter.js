@@ -4,6 +4,7 @@ exports.Converter = void 0;
 const zlib_1 = require("zlib");
 const face_1 = require("./face");
 const image_1 = require("./image");
+const elements_1 = require("./elements");
 const core_1 = require("../core");
 const message_1 = require("./message");
 const music_1 = require("./music");
@@ -39,15 +40,15 @@ class Converter {
         this.brief = "";
         /** 分片后 */
         this.fragments = [];
-        if (typeof content === "string") {
-            this._text(content);
+        let _content = Array.isArray(content) ? content : [content];
+        for (let elem of _content) {
+            if (!(typeof (elem) === "string" || elements_1.ChainElemTypes.includes(elem.type))) {
+                _content = [elem];
+                break;
+            }
         }
-        else if (Array.isArray(content)) {
-            for (let elem of content)
-                this._convert(elem);
-        }
-        else {
-            this._convert(content);
+        for (let elem of _content) {
+            this._convert(elem);
         }
         if (!this.elems.length && !this.rich[4])
             throw new Error("empty message");
@@ -439,19 +440,6 @@ class Converter {
     file(elem) {
         throw new Error("暂不支持发送或转发file元素，请调用文件相关API完成该操作");
     }
-    raw(elem) {
-        let data = elem.data;
-        if (typeof data === 'string' && data.startsWith("protobuf://")) {
-            data = Buffer.from(data.replace("protobuf://", ""), "base64");
-            this.elems.push(data);
-        }
-        else {
-            if (!Array.isArray(data))
-                data = [data];
-            this.elems.push(...data);
-        }
-        this.brief += "[原始消息]";
-    }
     reply(elem) {
         const { id } = elem;
         if (id.length > 24)
@@ -553,6 +541,19 @@ class Converter {
             }
         });
         this.brief = `[回复${this.brief.replace(tmp, "")}]` + tmp;
+    }
+    raw(elem) {
+        let data = elem.data;
+        if (typeof data === 'string' && data.startsWith("protobuf://")) {
+            data = Buffer.from(data.replace("protobuf://", ""), "base64");
+            this.elems.push(data);
+        }
+        else {
+            if (!Array.isArray(data))
+                data = [data];
+            this.elems.push(...data);
+        }
+        this.brief += "[原始消息]";
     }
 }
 exports.Converter = Converter;
