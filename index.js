@@ -274,8 +274,8 @@ const adapter = new class ICQQAdapter {
     if (config.markdown.mode) {
       if (config.markdown.mode == "mix")
         msgs = [
-          await this.makeMarkdownMsg(id, pick, msg),
           ...await this.makeMsg(id, pick, msg),
+          await this.makeMarkdownMsg(id, pick, msg),
         ]
       else
         msgs = [await this.makeMarkdownMsg(id, pick, msg)]
@@ -285,7 +285,7 @@ const adapter = new class ICQQAdapter {
 
     if (await sendMsg() === false) {
       msgs = await this.makeMsg(id, pick,
-        await Bot.makeForwardMsg([{ message: msg }]))
+        [await Bot.makeForwardMsg([{ message: msg }])])
       await sendMsg()
     }
 
