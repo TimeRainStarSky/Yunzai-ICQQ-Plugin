@@ -764,6 +764,32 @@ class Contactable {
         buf = core_1.tea.decrypt(buf.slice(head_len + 9, head_len + 9 + body_len), rsp[3].toBuffer());
         return (0, common_1.unzip)(core_1.pb.decode(buf)[3][3].toBuffer());
     }
+    async getPttUrl(fid) {
+        const body = core_1.pb.encode({
+            1: 1200,
+            2: 0,
+            14: {
+                10: this.c.uin,
+                20: fid,
+                30: 2,
+            },
+            101: 17,
+            102: 104,
+            99999: {
+                90300: 1,
+                91000: 2,
+                91100: 1,
+            },
+        });
+        const payload = await this.c.sendUni("PttCenterSvr.pb_pttCenter_CMD_REQ_APPLY_DOWNLOAD-1200", body);
+        const rsp = core_1.pb.decode(payload)[14];
+        if (rsp[10] !== 0)
+            (0, errors_1.drop)(rsp[10], "获取语音下载地址失败");
+        const url = new URL(rsp[30][50].toString());
+        url.host = "grouptalk.c2c.qq.com";
+        url.protocol = "https";
+        return url.toString();
+    }
     /** 获取视频下载地址 */
     async getVideoUrl(fid, md5) {
         const body = core_1.pb.encode({

@@ -46,6 +46,7 @@ export declare abstract class Contactable {
     getForwardMsg(resid: string, fileName?: string, nt?: boolean): Promise<ForwardMessage[]>;
     private _newDownloadMultiMsg;
     private _downloadMultiMsg;
+    getPttUrl(fid: string): Promise<string>;
     /** 获取视频下载地址 */
     getVideoUrl(fid: string, md5: string | Buffer): Promise<string>;
 }

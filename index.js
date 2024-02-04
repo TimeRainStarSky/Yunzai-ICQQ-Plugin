@@ -11,8 +11,15 @@ const adapter = new class ICQQAdapter {
     this.version = config.package.dependencies.icqq.replace("^", "v")
   }
 
+  async uploadRecord(id, file) {
+    const group = Bot[id].pickGroup(Math.ceil(Math.random()*10**9))
+    const record = await group.uploadPtt({ file })
+    const proto = Bot[id].icqq.core.pb.decodePb(Buffer.from(record.file.replace("protobuf://", ""), "base64"))
+    return group.getPttUrl(proto[3])
+  }
+
   async uploadImage(id, file) {
-    const image = new Bot[id].icqq.Image(segment.image(file))
+    const image = new Bot[id].icqq.Image({ file })
     image.upload = await Bot[id].pickGroup(Math.ceil(Math.random()*10**9)).uploadImages([image])
     if (image.upload[0].status == "fulfilled")
       image.url = Bot[id].icqq.getGroupImageUrl(image.md5.toString("hex"))
@@ -491,6 +498,7 @@ const adapter = new class ICQQAdapter {
         version: this.version,
       },
       uploadImage: file => this.uploadImage(id, file),
+      uploadRecord: file => this.uploadRecord(id, file),
     }, {
       get: (target, prop, receiver) => this.getBot(id, target, prop, receiver),
     })
