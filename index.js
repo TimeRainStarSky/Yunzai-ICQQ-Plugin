@@ -134,7 +134,7 @@ const adapter = new class ICQQAdapter {
     const button = []
     const forward = []
 
-    for (let i of msg) {
+    for (let i of Array.isArray(msg) ? msg : [msg]) {
       if (typeof i == "object")
         i = { ...i }
       else
@@ -219,7 +219,7 @@ const adapter = new class ICQQAdapter {
     const forward = []
     let reply
 
-    for (let i of msg) {
+    for (let i of Array.isArray(msg) ? msg : [msg]) {
       if (typeof i == "object") switch (i.type) {
         case "record":
         case "video":
@@ -267,8 +267,6 @@ const adapter = new class ICQQAdapter {
   }
 
   async sendMsg(id, pick, msg, ...args) {
-    if (!Array.isArray(msg))
-      msg = [msg]
     const rets = { message_id: [], data: [] }
     let msgs
 
