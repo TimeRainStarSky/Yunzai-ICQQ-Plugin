@@ -250,8 +250,8 @@ const adapter = new class ICQQAdapter {
           continue
         case "node":
           for (const node of i.data)
-            forward.push({ ...node, type: "node",
-              message: await this.makeMsg(id, pick, node.message) })
+            for (const message of await this.makeMsg(id, pick, node.message))
+              forward.push({ ...node, type: "node", message })
           continue
       }
       message.push(i)
