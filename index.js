@@ -1,14 +1,31 @@
 logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
-import { config, configSave } from "./Model/config.js"
+import makeConfig from "../../lib/plugins/config.js"
 import icqq from "./Model/icqq/lib/index.js"
 import { randomUUID } from "node:crypto"
+
+const { config, configSave } = await makeConfig("ICQQ", {
+  tips: "",
+  permission: "master",
+  markdown: {
+    mode: false,
+    button: true,
+    callback: true,
+  },
+  bot: {},
+  token: [],
+}, {
+  tips: [
+    "欢迎使用 TRSS-Yunzai ICQQ Plugin ! 作者：时雨🌌星空",
+    "参考：https://github.com/TimeRainStarSky/Yunzai-ICQQ-Plugin",
+  ],
+})
 
 const adapter = new class ICQQAdapter {
   constructor() {
     this.id = "QQ"
     this.name = "ICQQ"
-    this.version = config.package.dependencies.icqq.replace("^", "v")
+    this.version = "v0.6.10"
   }
 
   async uploadVideo(id, file) {
@@ -197,7 +214,7 @@ const adapter = new class ICQQAdapter {
           }})
         if (!button.length) break
       }
-      while (button.length) {
+      while (button.length)
         messages.push([
           { type: "markdown", content: " " },
           { type: "button", content: {
@@ -205,7 +222,6 @@ const adapter = new class ICQQAdapter {
             rows: button.splice(0,5),
           }},
         ])
-      }
     }
 
     for (const i of messages)
@@ -596,12 +612,12 @@ export class ICQQAdapter extends plugin {
         return false
       }
     }
-    configSave()
+    await configSave()
   }
 
-  SignUrl() {
+  async SignUrl() {
     config.bot.sign_api_addr = this.e.msg.replace(/^#[Qq]+签名/, "").trim()
-    configSave()
+    await configSave()
     this.reply("签名已设置，重启后生效", true)
   }
 }
