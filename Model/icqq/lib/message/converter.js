@@ -4,7 +4,6 @@ exports.Converter = void 0;
 const zlib_1 = require("zlib");
 const face_1 = require("./face");
 const image_1 = require("./image");
-const elements_1 = require("./elements");
 const core_1 = require("../core");
 const message_1 = require("./message");
 const music_1 = require("./music");
@@ -40,14 +39,7 @@ class Converter {
         this.brief = "";
         /** 分片后 */
         this.fragments = [];
-        let _content = Array.isArray(content) ? content : [content];
-        for (let elem of _content) {
-            if (!(typeof (elem) === "string" || elements_1.ChainElemTypes.includes(elem.type))) {
-                _content = [elem];
-                break;
-            }
-        }
-        for (let elem of _content) {
+        for (let elem of Array.isArray(content) ? content : [content]) {
             this._convert(elem);
         }
         if (!this.elems.length && !this.rich[4])

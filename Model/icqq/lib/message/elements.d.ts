@@ -291,7 +291,6 @@ export interface RawElem {
 }
 /** 可组合发送的元素 */
 export type ChainElem = TextElem | FaceElem | BfaceElem | MfaceElem | ImageElem | AtElem | MiraiElem | ReplyElem | ForwardNode | QuoteElem | MarkdownElem | ButtonElem | RawElem;
-export declare const ChainElemTypes: ChainElem["type"][];
 /** 注意：只有`ChainElem`中的元素可以组合发送，其他元素只能单独发送 */
 export type MessageElem = TextElem | FaceElem | BfaceElem | MfaceElem | ImageElem | AtElem | MiraiElem | ReplyElem | FlashElem | PttElem | VideoElem | JsonElem | XmlElem | PokeElem | LocationElem | ShareElem | MusicElem | FileElem | ForwardNode | QuoteElem | MarkdownElem | ButtonElem | RawElem;
 /** 可通过`sendMsg`发送的类型集合 (字符串、元素对象，或它们的数组) */

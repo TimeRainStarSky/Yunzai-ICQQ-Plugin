@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.segment = exports.ChainElemTypes = void 0;
+exports.segment = void 0;
 const music_1 = require("./music");
-exports.ChainElemTypes = ["text", "at", "face", "sface", "bface", "rps", "dice", "image", "markdown", "button", "mirai", "reply", "quote", "node", "raw"];
 /** 用于构造消息元素 */
 exports.segment = {
     /** @deprecated 文本，建议直接使用字符串 */
