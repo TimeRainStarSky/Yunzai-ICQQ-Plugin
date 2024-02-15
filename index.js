@@ -9,7 +9,7 @@ const { config, configSave } = await makeConfig("ICQQ", {
   permission: "master",
   markdown: {
     mode: false,
-    button: true,
+    button: false,
     callback: true,
   },
   bot: {},
@@ -295,7 +295,7 @@ const adapter = new class ICQQAdapter {
       if (ret.message_id)
         rets.message_id.push(ret.message_id)
     } catch (err) {
-      Bot.makeLog("error", ["发送消息错误：", i, err], id)
+      Bot.makeLog("error", ["发送消息错误", i, err], id)
       return false
     }}
 
