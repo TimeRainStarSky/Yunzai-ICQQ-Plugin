@@ -411,11 +411,13 @@ const adapter = new class ICQQAdapter {
     bot.logger = log
 
     let getTips = "发送 "
+    let sendMsg
     if (typeof get != "function") {
       getTips += `#Bot验证${id}:`
       get = () => new Promise(resolve =>
         Bot.once(`verify.${id}`, data => {
           send = data.reply
+          sendMsg = true
           resolve(data.msg)
         })
       )
@@ -507,7 +509,10 @@ const adapter = new class ICQQAdapter {
       `[${id}] 账号下线：${data.message}\n`+
       `发送 #Bot上线${id} 重新登录`
     ))
-    bot.on("system.online", () => bot.logger = log)
+    bot.on("system.online", () => {
+      bot.logger = log
+      if (sendMsg) send(`[${id}] 登录完成`)
+    })
 
     Bot[id] = new Proxy({
       adapter: this,
