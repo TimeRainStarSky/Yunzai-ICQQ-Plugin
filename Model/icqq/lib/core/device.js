@@ -582,7 +582,7 @@ const watch = [
         main_sig_map: 16724722,
         sub_sig_map: 0x10400,
         display: "Watch",
-        device_type: 8,
+        device_type: 0,
         ...shortInfo
     };
 });
