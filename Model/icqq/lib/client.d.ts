@@ -219,12 +219,12 @@ export declare class Client extends BaseClient {
      * 获取转发消息
      * use {@link Friend.getForwardMsg}
      */
-    getForwardMsg(resid: string, fileName?: string, nt?: boolean): Promise<import("./message").ForwardMessage[]>;
+    getForwardMsg(resid: string, fileName?: string): Promise<import("./message").ForwardMessage[]>;
     /**
      * 制作转发消息
      * use {@link Friend.makeForwardMsg} or {@link Group.makeForwardMsg}
      */
-    makeForwardMsg(fake: Forwardable[], dm?: boolean, nt?: boolean): Promise<import("./message").JsonElem>;
+    makeForwardMsg(fake: Forwardable[], dm?: boolean): Promise<import("./message").JsonElem>;
     /** Ocr图片转文字 */
     imageOcr(file: ImageElem["file"]): Promise<import("./internal").OcrResult>;
     /** @cqhttp (cqhttp遗留方法) use {@link cookies[domain]} */

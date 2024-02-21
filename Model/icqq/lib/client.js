@@ -70,7 +70,7 @@ class Client extends core_1.BaseClient {
             resend: true,
             cache_group_member: true,
             reconn_interval: 5,
-            data_dir: path.join(require?.main?.path || process.cwd(), "data"),
+            data_dir: path.join(process.cwd(), "data"),
             ...conf,
         };
         const dir = path.resolve(config.data_dir);
@@ -386,15 +386,15 @@ class Client extends core_1.BaseClient {
      * 获取转发消息
      * use {@link Friend.getForwardMsg}
      */
-    getForwardMsg(resid, fileName, nt) {
-        return this.pickFriend(this.uin).getForwardMsg(resid, fileName, nt);
+    getForwardMsg(resid, fileName) {
+        return this.pickFriend(this.uin).getForwardMsg(resid, fileName);
     }
     /**
      * 制作转发消息
      * use {@link Friend.makeForwardMsg} or {@link Group.makeForwardMsg}
      */
-    makeForwardMsg(fake, dm = false, nt) {
-        return (dm ? this.pickFriend : this.pickGroup)(this.uin).makeForwardMsg(fake, nt);
+    makeForwardMsg(fake, dm = false) {
+        return (dm ? this.pickFriend : this.pickGroup)(this.uin).makeForwardMsg(fake);
     }
     /** Ocr图片转文字 */
     imageOcr(file) {

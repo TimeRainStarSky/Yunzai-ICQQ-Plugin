@@ -1,6 +1,6 @@
 {
-  "name": "icqq",
-  "version": "0.6.11",
+  "name": "@icqqjs/icqq",
+  "version": "1.0.3",
   "upday": "2024/2/21",
   "description": "QQ protocol for NodeJS!",
   "main": "lib/index.js",
@@ -18,7 +18,10 @@
   "engines": {
     "node": ">= v14"
   },
-  "repository": "https://github.com/icqqjs/icqq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/icqqjs/icqq.git"
+  },
   "keywords": [
     "qq",
     "icqq",
@@ -38,7 +41,7 @@
     "long": "^5.2.3",
     "pngjs": "^7.0.0",
     "probe-image-size": "^7.2.3",
-    "silk-wasm": "^3.2.2",
+    "silk-wasm": "^3.2.3",
     "triptrap": "^0.0.17"
   },
   "files": [

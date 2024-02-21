@@ -262,6 +262,7 @@ const mobile = [
     {
         name: "A9.0.17.6a4a36ca",
         version: "9.0.17.15185",
+        nt: true,
         ver: "9.0.17",
         buildtime: 1702888273,
         subid: 537204056,
@@ -274,6 +275,7 @@ const mobile = [
     {
         name: "A9.0.15.4145f774",
         version: "9.0.15.14970",
+        nt: true,
         ver: "9.0.15",
         buildtime: 1702888273,
         subid: 537202216,
@@ -286,6 +288,7 @@ const mobile = [
     {
         name: "A9.0.8.10368491",
         version: "9.0.8.14755",
+        nt: true,
         ver: "9.0.8",
         buildtime: 1702888273,
         subid: 537200218,
@@ -298,6 +301,7 @@ const mobile = [
     {
         name: "A9.0.0.0ebb1ecb",
         version: "9.0.0.14110",
+        nt: true,
         ver: "9.0.0",
         buildtime: 1701164403,
         subid: 537194351,

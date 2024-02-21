@@ -111,6 +111,7 @@ export declare enum Platform {
 /** 登录设备通用属性 */
 export type Apk = {
     id: string;
+    nt?: boolean;
     app_key: string;
     name: string;
     version: string;

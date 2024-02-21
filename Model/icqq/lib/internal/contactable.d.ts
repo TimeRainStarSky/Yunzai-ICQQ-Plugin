@@ -41,9 +41,9 @@ export declare abstract class Contactable {
      * 需要注意的是，好友图片和群图片的内部格式不一样，对着群制作的转发消息中的图片，发给好友可能会裂图，反过来也一样
      * 支持4层套娃转发（PC仅显示3层）
      */
-    makeForwardMsg(msglist: Forwardable[] | Forwardable, nt?: boolean): Promise<JsonElem>;
+    makeForwardMsg(msglist: Forwardable[] | Forwardable): Promise<JsonElem>;
     /** 下载并解析合并转发 */
-    getForwardMsg(resid: string, fileName?: string, nt?: boolean): Promise<ForwardMessage[]>;
+    getForwardMsg(resid: string, fileName?: string): Promise<ForwardMessage[]>;
     private _newDownloadMultiMsg;
     private _downloadMultiMsg;
     getPttUrl(fid: string): Promise<string>;

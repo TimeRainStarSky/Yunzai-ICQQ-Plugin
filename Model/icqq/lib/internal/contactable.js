@@ -504,7 +504,8 @@ class Contactable {
      * 需要注意的是，好友图片和群图片的内部格式不一样，对着群制作的转发消息中的图片，发给好友可能会裂图，反过来也一样
      * 支持4层套娃转发（PC仅显示3层）
      */
-    async makeForwardMsg(msglist, nt = true) {
+    async makeForwardMsg(msglist) {
+        const isNt = this.c.apk.nt;
         if (!Array.isArray(msglist))
             msglist = [msglist];
         const nodes = [];
@@ -554,7 +555,7 @@ class Contactable {
                     }
                 }
                 if (resid && fileName) {
-                    const buff = nt ? await this._newDownloadMultiMsg(String(resid), this.dm ? 1 : 2) : await this._downloadMultiMsg(String(resid), this.dm ? 1 : 2);
+                    const buff = isNt ? await this._newDownloadMultiMsg(String(resid), this.dm ? 1 : 2) : await this._downloadMultiMsg(String(resid), this.dm ? 1 : 2);
                     let arr = core_1.pb.decode(buff)[2];
                     if (!Array.isArray(arr))
                         arr = [arr];
@@ -588,7 +589,7 @@ class Contactable {
                 });
                 cnt++;
             }
-            if (nt) {
+            if (isNt) {
                 nodes.push({
                     1: {
                         1: fake.user_id,
@@ -652,10 +653,10 @@ class Contactable {
         }));
         let resid;
         try {
-            resid = nt ? await this._newUploadMultiMsg(compressed) : await this._uploadMultiMsg(compressed);
+            resid = isNt ? await this._newUploadMultiMsg(compressed) : await this._uploadMultiMsg(compressed);
         }
         catch {
-            resid = nt ? await this._newUploadMultiMsg(compressed) : await this._uploadMultiMsg(compressed);
+            resid = isNt ? await this._newUploadMultiMsg(compressed) : await this._uploadMultiMsg(compressed);
         }
         const json = {
             "app": "com.tencent.multimsg",
@@ -681,9 +682,10 @@ class Contactable {
         };
     }
     /** 下载并解析合并转发 */
-    async getForwardMsg(resid, fileName = "MultiMsg", nt = true) {
+    async getForwardMsg(resid, fileName = "MultiMsg") {
+        const isNt = this.c.apk.nt;
         const ret = [];
-        const buf = nt ? await this._newDownloadMultiMsg(String(resid), this.dm ? 1 : 2) : await this._downloadMultiMsg(String(resid), this.dm ? 1 : 2);
+        const buf = isNt ? await this._newDownloadMultiMsg(String(resid), this.dm ? 1 : 2) : await this._downloadMultiMsg(String(resid), this.dm ? 1 : 2);
         let a = core_1.pb.decode(buf)[2];
         if (!Array.isArray(a))
             a = [a];

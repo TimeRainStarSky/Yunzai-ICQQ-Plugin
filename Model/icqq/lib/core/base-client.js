@@ -317,19 +317,7 @@ class BaseClient extends triptrap_1.Trapper {
         if (url.pathname.endsWith("/sign/"))
             url.pathname = url.pathname.replace(/sign\/$/, "");
         this.sig.url = url.href;
-        let module;
-        if (url.searchParams.get("key")) {
-            module = await Promise.resolve().then(() => __importStar(require("./qsign")));
-        }
-        else {
-            module = await Promise.resolve().then(() => __importStar(require("./sign")));
-            this.getCmdWhiteList = module.getCmdWhiteList.bind(this);
-        }
-        this.getApiQQVer = module.getApiQQVer.bind(this);
-        this.getT544 = module.getT544.bind(this);
-        this.getSign = module.getSign.bind(this);
-        this.requestSignToken = module.requestSignToken.bind(this);
-        this.submitSsoPacket = module.submitSsoPacket.bind(this);
+        Object.assign(this, url.searchParams.get("key") ? await Promise.resolve().then(() => __importStar(require("./qsign"))) : await Promise.resolve().then(() => __importStar(require("./sign"))));
         (0, constants_1.lock)(this, "sig");
     }
     on(matcher, listener) {

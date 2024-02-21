@@ -312,7 +312,7 @@ class Parser {
                 content = `{image:${elem.md5.toUpperCase()}}`;
                 break;
             default:
-                let data = {};
+                const data = {};
                 data[type] = proto.toBuffer();
                 elem = {
                     type: "raw",
