@@ -125,8 +125,7 @@ class BaseClient extends triptrap_1.Trapper {
                     4: buf
                 });
             })(),
-            sign_api_addr: "",
-            sign_api_init: false,
+            url: "",
             /** 上次cookie刷新时间 */
             emp_time: 0,
             time_diff: 0,
@@ -162,7 +161,7 @@ class BaseClient extends triptrap_1.Trapper {
             msg_cnt_per_min: 0,
             remote_ip: "",
             remote_port: 0,
-            ver: ''
+            ver: ""
         };
         this.signCmd = [
             "trpc.o3.ecdh_access.EcdhAccess.SsoSecureA2Establish",
@@ -309,20 +308,21 @@ class BaseClient extends triptrap_1.Trapper {
         }
     }
     async setSignServer(addr) {
-        if (!addr)
-            return;
         (0, constants_1.unlock)(this, "sig");
-        this.sig.sign_api_init = false;
         if (!/http(s)?:\/\//.test(addr))
             addr = `http://${addr}`;
-        this.sig.sign_api_addr = addr;
-        let url = new URL(this.sig.sign_api_addr);
+        const url = new URL(addr);
+        if (!url.pathname.endsWith("/"))
+            url.pathname += "/";
+        if (url.pathname.endsWith("/sign/"))
+            url.pathname = url.pathname.replace(/sign\/$/, "");
+        this.sig.url = url.href;
         let module;
-        if (url.searchParams.get('key')) {
-            module = await Promise.resolve().then(() => __importStar(require('./qsign')));
+        if (url.searchParams.get("key")) {
+            module = await Promise.resolve().then(() => __importStar(require("./qsign")));
         }
         else {
-            module = await Promise.resolve().then(() => __importStar(require('./sign')));
+            module = await Promise.resolve().then(() => __importStar(require("./sign")));
             this.getCmdWhiteList = module.getCmdWhiteList.bind(this);
         }
         this.getApiQQVer = module.getApiQQVer.bind(this);
@@ -330,7 +330,6 @@ class BaseClient extends triptrap_1.Trapper {
         this.getSign = module.getSign.bind(this);
         this.requestSignToken = module.requestSignToken.bind(this);
         this.submitSsoPacket = module.submitSsoPacket.bind(this);
-        this.sig.sign_api_init = true;
         (0, constants_1.lock)(this, "sig");
     }
     on(matcher, listener) {
@@ -367,8 +366,8 @@ class BaseClient extends triptrap_1.Trapper {
                 11: 2052,
                 12: qImei36,
                 14: 0,
-                15: '',
-                16: this.uid || '',
+                15: "",
+                16: this.uid || "",
                 18: 0,
                 19: 1,
                 20: 1,
@@ -394,10 +393,7 @@ class BaseClient extends triptrap_1.Trapper {
         }
         return Buffer.from(pb.encode(reserveFields));
     }
-    async switchQQVer(ver = '') {
-        if (this.config.sign_api_addr && !this.sig.sign_api_init) {
-            await this.setSignServer(this.config.sign_api_addr);
-        }
+    async switchQQVer(ver = "") {
         if (this.config.ver) {
             this.statistics.ver = this.config.ver;
             return false;
@@ -438,15 +434,15 @@ class BaseClient extends triptrap_1.Trapper {
         const t = tlv.getPacker(this);
         let getLocalT544 = (cmd) => {
             switch (cmd) {
-                case '810_2':
+                case "810_2":
                     return t(0x544, 0, 2);
-                case '810_7':
+                case "810_7":
                     return t(0x544, 0, 7);
-                case '810_9':
+                case "810_9":
                     return t(0x544, 2, 9);
-                case '810_a':
+                case "810_a":
                     return t(0x544, 2, 10);
-                case '810_f':
+                case "810_f":
                     return t(0x544, 2, 15);
             }
             return constants_1.BUF0;
@@ -461,9 +457,9 @@ class BaseClient extends triptrap_1.Trapper {
             return constants_1.BUF0;
         }
         let sec_info = {
-            1: Buffer.from(sign, 'hex'),
-            2: Buffer.from(token, 'hex'),
-            3: Buffer.from(extra, 'hex')
+            1: Buffer.from(sign, "hex"),
+            2: Buffer.from(token, "hex"),
+            3: Buffer.from(extra, "hex")
         };
         return Buffer.from(pb.encode(sec_info));
     }
@@ -472,7 +468,7 @@ class BaseClient extends triptrap_1.Trapper {
             let new_list = [];
             for (let val of list) {
                 try {
-                    let data = pb.decode(Buffer.from(val.body, 'hex'));
+                    let data = pb.decode(Buffer.from(val.body, "hex"));
                     val.type = data[1].toString();
                 }
                 catch (err) { }
@@ -512,10 +508,10 @@ class BaseClient extends triptrap_1.Trapper {
         }
         for (let ssoPacket of list) {
             let cmd = ssoPacket.cmd;
-            let body = Buffer.from(ssoPacket.body, 'hex');
+            let body = Buffer.from(ssoPacket.body, "hex");
             let callbackId = ssoPacket.callbackId;
             let payload = await this.sendUni(cmd, body);
-            this.emit("internal.verbose", `sendUni:${cmd} result: ${payload.toString('hex')}`, VerboseLevel.Debug);
+            this.emit("internal.verbose", `sendUni:${cmd} result: ${payload.toString("hex")}`, VerboseLevel.Debug);
             if (callbackId > -1) {
                 await this.submitSsoPacket(cmd, callbackId, payload);
             }
@@ -630,7 +626,7 @@ class BaseClient extends triptrap_1.Trapper {
             try {
                 const stream = stream_1.Readable.from(token, { objectMode: false });
                 let info = stream.read(stream.read(2).readUInt16BE());
-                if ((String(info) || '').includes('icqq')) {
+                if ((String(info) || "").includes("icqq")) {
                     info = JSON.parse(String(info));
                     if (info.apk.version != this.apk.version) {
                         if (info.apk.id != this.apk.id || (this.statistics.ver && info.apk.subid > this.apk.subid)) {
@@ -698,8 +694,8 @@ class BaseClient extends triptrap_1.Trapper {
             }
             catch (err) {
                 console.log(err);
-                this.emit("internal.verbose", '旧版token于当前版本不兼容，请手动删除token后重新运行', VerboseLevel.Error);
-                this.emit("internal.verbose", '若非无法登录，请勿随意升级版本', VerboseLevel.Warn);
+                this.emit("internal.verbose", "旧版token于当前版本不兼容，请手动删除token后重新运行", VerboseLevel.Error);
+                this.emit("internal.verbose", "若非无法登录，请勿随意升级版本", VerboseLevel.Warn);
                 this.emit("internal.error.login", 123456, `token不兼容`);
                 return constants_1.BUF0;
             }
@@ -745,7 +741,7 @@ class BaseClient extends triptrap_1.Trapper {
             ]);
         }
         if (this.apk.ssover >= 5) {
-            tlvs.push(await this.getT544(cmd === 15 ? '810_f' : '810_a'));
+            tlvs.push(await this.getT544(cmd === 15 ? "810_f" : "810_a"));
             if (this.sig.t553)
                 tlvs.push(t(0x553));
         }
@@ -810,7 +806,7 @@ class BaseClient extends triptrap_1.Trapper {
             t(0x548)
         ];
         if (this.apk.ssover >= 12) {
-            tlvs.push(await this.getT544('810_9'));
+            tlvs.push(await this.getT544("810_9"));
             if (this.sig.t553)
                 tlvs.push(t(0x553));
         }
@@ -846,7 +842,7 @@ class BaseClient extends triptrap_1.Trapper {
             t(0x193, ticket),
         ];
         if (this.apk.ssover >= 12) {
-            tlvs.push(await this.getT544('810_2'));
+            tlvs.push(await this.getT544("810_2"));
             if (this.sig.t553)
                 tlvs.push(t(0x553));
         }
@@ -892,7 +888,7 @@ class BaseClient extends triptrap_1.Trapper {
             t(0x401)
         ];
         if (this.apk.ssover >= 12) {
-            tlvs.push(await this.getT544('810_7'));
+            tlvs.push(await this.getT544("810_7"));
             if (this.sig.t553)
                 tlvs.push(t(0x553));
         }
@@ -949,7 +945,7 @@ class BaseClient extends triptrap_1.Trapper {
             this.emit("internal.error.network", -2, "server is busy");
         }
         else if (retcode === 0 && t106 && t16a && t318 && tgtgt) {
-            if (this.apk.qua != '' && (!this.device.qImei36 || !this.device.qImei16)) {
+            if (this.apk.qua != "" && (!this.device.qImei36 || !this.device.qImei16)) {
                 await this.device.getQIMEI();
             }
             this.uin = uin;
@@ -982,7 +978,7 @@ class BaseClient extends triptrap_1.Trapper {
             ];
             if (this.apk.ssover >= 5) {
                 tlvs.push(t(0x542));
-                tlvs.push(await this.getT544('810_9'));
+                tlvs.push(await this.getT544("810_9"));
                 tlvs.push(t(0x548));
                 if (this.sig.t553)
                     tlvs.push(t(0x553));
@@ -1138,7 +1134,7 @@ class BaseClient extends triptrap_1.Trapper {
         return this.sendUni(cmd, body, timeout);
     }
     async sendPacket(type, cmd, body) {
-        if (type === 'Uni')
+        if (type === "Uni")
             return await this.sendUni(cmd, body);
         else
             return await this.sendOidb(cmd, body);
@@ -1152,7 +1148,7 @@ class BaseClient extends triptrap_1.Trapper {
         if (pkt.length < 1) {
             return Buffer.from(pb.encode({
                 1: -1,
-                2: '签名api异常',
+                2: "签名api异常",
                 3: {}
             }));
         }
@@ -1187,7 +1183,7 @@ class BaseClient extends triptrap_1.Trapper {
                 else if (err === -1) {
                     if (this.register_retry_num > this.sig.register_retry_count) {
                         this.sig.register_retry_count++;
-                        this.emit("internal.verbose", '上线失败，第' + this.sig.register_retry_count + '次重试', VerboseLevel.Warn);
+                        this.emit("internal.verbose", "上线失败，第" + this.sig.register_retry_count + "次重试", VerboseLevel.Warn);
                         (0, timers_1.setTimeout)(() => {
                             re_register();
                         }, 2000);
@@ -1280,10 +1276,10 @@ function ssoListener(cmd, payload, seq) {
                         save_bigdata.call(this, buf);
                     }
                     catch {
-                        this.sig.bigdata.sig_session = Buffer.from('');
-                        this.sig.bigdata.session_key = Buffer.from('');
+                        this.sig.bigdata.sig_session = Buffer.from("");
+                        this.sig.bigdata.session_key = Buffer.from("");
                         this.sig.bigdata.port = 0;
-                        this.sig.bigdata.ip = '';
+                        this.sig.bigdata.ip = "";
                     }
                 }
                 ConfigPushSvc_PushResp.call(this, [nested[1], nested[3]]);
@@ -1293,15 +1289,15 @@ function ssoListener(cmd, payload, seq) {
 }
 function save_bigdata(data) {
     try {
-        const fs = require('fs');
-        fs.writeFileSync(path.join(this.config.data_dir, this.uin + '_bigdata'), data);
+        const fs = require("fs");
+        fs.writeFileSync(path.join(this.config.data_dir, this.uin + "_bigdata"), data);
     }
     catch { }
 }
 function read_bigdata() {
     try {
-        const fs = require('fs');
-        const file = path.join(this.config.data_dir, this.uin + '_bigdata');
+        const fs = require("fs");
+        const file = path.join(this.config.data_dir, this.uin + "_bigdata");
         if (!fs.existsSync(file))
             return;
         const data = fs.readFileSync(file);
@@ -1320,7 +1316,7 @@ function read_bigdata() {
 async function ConfigPushSvc_PushResp(data) {
     const MainServant = jce.encodeStruct(data);
     const body = jce.encodeWrapper({ MainServant }, "QQService.ConfigPushSvc.MainServant", "PushResp");
-    this.writeUni('ConfigPushSvc.PushResp', body);
+    this.writeUni("ConfigPushSvc.PushResp", body);
 }
 function onlineListener() {
     if (!this.listeners(EVENT_KICKOFF).length) {
@@ -1425,7 +1421,7 @@ async function packetListener(pkt) {
                 throw new Error("unknown flag:" + flag);
         }
         const sso = await parseSso.call(this, decrypted);
-        this.emit("internal.verbose", `recv:${sso.cmd} seq:${sso.seq}${sso.retcode !== 0 ? ` retcode:${sso.retcode}` : ''}`, sso.retcode !== 0 ? VerboseLevel.Error : VerboseLevel.Debug);
+        this.emit("internal.verbose", `recv:${sso.cmd} seq:${sso.seq}${sso.retcode !== 0 ? ` retcode:${sso.retcode}` : ""}`, sso.retcode !== 0 ? VerboseLevel.Error : VerboseLevel.Debug);
         if (this[HANDLERS].has(sso.seq))
             this[HANDLERS].get(sso.seq)?.(sso.payload);
         else
@@ -1472,7 +1468,7 @@ async function _register(logout = false, reflush = false) {
         else {
             this[IS_ONLINE] = true;
             const heartbeatSuccess = async () => {
-                let hb480_cmd = [device_1.Platform.Tim].includes(this.config.platform) ? 'OidbSvc.0x480_9' : 'OidbSvc.0x480_9_IMCore';
+                let hb480_cmd = [device_1.Platform.Tim].includes(this.config.platform) ? "OidbSvc.0x480_9" : "OidbSvc.0x480_9_IMCore";
                 this.sendUni(hb480_cmd, this.sig.hb480).catch(async () => {
                     this.emit("internal.verbose", hb480_cmd + " timeout", VerboseLevel.Warn);
                 });
@@ -1675,7 +1671,7 @@ function decodeT119(t119) {
     this.sig.device_token = t[0x322] || this.sig.device_token;
     this.sig.t543 = t[0x543] || this.sig.t543 || constants_1.BUF0;
     this.sig.emp_time = (0, constants_1.timestamp)();
-    this.uid = this.sig.t543.length > 6 ? this.sig.t543.slice(6).toString() : '';
+    this.uid = this.sig.t543.length > 6 ? this.sig.t543.slice(6).toString() : "";
     if (t[0x512]) {
         const r = stream_1.Readable.from(t[0x512], { objectMode: false });
         let len = r.read(2).readUInt16BE();
@@ -1793,7 +1789,7 @@ function decodeLoginResponse(payload) {
             const message = `[${title}]${content}`;
             this.emit("internal.verbose", message + "(错误码：" + type + ")", VerboseLevel.Warn);
         }
-        return this.emit('internal.error.login', type, '账号被冻结');
+        return this.emit("internal.error.login", type, "账号被冻结");
     }
     if (type === 45 && t[0x146]) {
         const stream = stream_1.Readable.from(t[0x146], { objectMode: false });
@@ -1803,7 +1799,7 @@ function decodeLoginResponse(payload) {
         const message = `[${title}]${content}`;
         this.emit("internal.verbose", message + "(错误码：" + type + ")", VerboseLevel.Warn);
         if (content.includes("你当前使用的QQ版本过低")) {
-            this.emit('internal.error.login', type, 'QQ协议版本过低，请更新！');
+            this.emit("internal.error.login", type, "QQ协议版本过低，请更新！");
         }
         return;
     }
@@ -1822,7 +1818,7 @@ function decodeLoginResponse(payload) {
         let dir = path.resolve(this.config.data_dir);
         let device_path = path.join(dir, `device.json`);
         //fs.unlink(device_path)
-        //this.log('warn',`[${type}]当前设备信息被拉黑，已为您重置设备信息，请重新登录！`)
+        //this.log("warn",`[${type}]当前设备信息被拉黑，已为您重置设备信息，请重新登录！`)
         return this.emit("internal.error.login", type, `[登陆失败](${type})当前设备信息被拉黑，建议删除"${device_path}"后重新登录！`);
     }
     if (type === 237) {

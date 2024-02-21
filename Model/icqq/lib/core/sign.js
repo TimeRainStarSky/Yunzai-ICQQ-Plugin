@@ -9,35 +9,28 @@ const base_client_1 = require("./base-client");
 const constants_1 = require("./constants");
 async function getT544(cmd) {
     let sign = constants_1.BUF0;
-    if (this.sig.sign_api_addr && this.apk.qua) {
+    if (this.sig.url && this.apk.qua) {
         const time = Date.now();
         let post_params = {
             ver: this.apk.ver,
             uin: this.uin || 0,
             data: cmd,
-            guid: this.device.guid.toString('hex'),
+            guid: this.device.guid.toString("hex"),
             version: this.apk.sdkver
         };
-        let url = new URL(this.sig.sign_api_addr);
-        let path = url.pathname;
-        if (path.substring(path.length - 1) === '/') {
-            path += 'energy';
-        }
-        else {
-            path = path.replace(/\/sign$/, '/energy');
-        }
-        url.pathname = path;
+        const url = new URL(this.sig.url);
+        url.pathname += "energy";
         const data = await get.bind(this)(url.href, post_params, true);
         const log = `getT544:${cmd} result(${Date.now() - time}ms):${JSON.stringify(data)}`;
         if (data.code === 0) {
             this.emit("internal.verbose", log, base_client_1.VerboseLevel.Debug);
-            if (typeof (data.data) === 'string') {
-                sign = Buffer.from(data.data, 'hex');
+            if (typeof (data.data) === "string") {
+                sign = Buffer.from(data.data, "hex");
             }
-            else if (typeof (data.data?.sign) === 'string') {
-                sign = Buffer.from(data.data.sign, 'hex');
-                if (typeof (data.data.t553) === 'string')
-                    this.sig.t553 = Buffer.from(data.data.t553, 'hex');
+            else if (typeof (data.data?.sign) === "string") {
+                sign = Buffer.from(data.data.sign, "hex");
+                if (typeof (data.data.t553) === "string")
+                    this.sig.t553 = Buffer.from(data.data.t553, "hex");
             }
         }
         else {
@@ -49,9 +42,8 @@ async function getT544(cmd) {
 exports.getT544 = getT544;
 async function getSign(cmd, seq, body) {
     let params = constants_1.BUF0;
-    if (!this.sig.sign_api_addr) {
+    if (!this.sig.url)
         return params;
-    }
     let qImei36 = this.device.qImei36 || this.device.qImei16;
     if (this.apk.qua) {
         const time = Date.now();
@@ -63,15 +55,11 @@ async function getSign(cmd, seq, body) {
             seq: seq,
             androidId: this.device.android_id,
             qimei36: qImei36 || this.device.android_id,
-            guid: this.device.guid.toString('hex'),
-            buffer: body.toString('hex')
+            guid: this.device.guid.toString("hex"),
+            buffer: body.toString("hex")
         };
-        let url = new URL(this.sig.sign_api_addr);
-        let path = url.pathname;
-        if (path.substring(path.length - 1) === '/') {
-            path += 'sign';
-        }
-        url.pathname = path;
+        const url = new URL(this.sig.url);
+        url.pathname += "sign";
         const data = await get.bind(this)(url.href, post_params, true);
         const log = `sign:${cmd} seq:${seq} result(${Date.now() - time}ms):${JSON.stringify(data)}`;
         if (data.code === 0) {
@@ -90,9 +78,8 @@ async function getSign(cmd, seq, body) {
 }
 exports.getSign = getSign;
 async function requestSignToken() {
-    if (!this.sig.sign_api_addr) {
+    if (!this.sig.url)
         return [];
-    }
     let qImei36 = this.device.qImei36 || this.device.qImei16;
     if (this.apk.qua) {
         const time = Date.now();
@@ -102,17 +89,10 @@ async function requestSignToken() {
             uin: this.uin || 0,
             androidId: this.device.android_id,
             qimei36: qImei36 || this.device.android_id,
-            guid: this.device.guid.toString('hex'),
+            guid: this.device.guid.toString("hex"),
         };
-        let url = new URL(this.sig.sign_api_addr);
-        let path = url.pathname;
-        if (path.substring(path.length - 1) === '/') {
-            path += 'request_token';
-        }
-        else {
-            path = path.replace(/\/sign$/, '/request_token');
-        }
-        url.pathname = path;
+        const url = new URL(this.sig.url);
+        url.pathname += "request_token";
         const data = await get.bind(this)(url.href, post_params, true);
         this.emit("internal.verbose", `requestSignToken result(${Date.now() - time}ms): ${JSON.stringify(data)}`, base_client_1.VerboseLevel.Debug);
         if (data.code === 0) {
@@ -126,9 +106,8 @@ async function requestSignToken() {
 }
 exports.requestSignToken = requestSignToken;
 async function submitSsoPacket(cmd, callbackId, body) {
-    if (!this.sig.sign_api_addr) {
+    if (!this.sig.url)
         return [];
-    }
     let qImei36 = this.device.qImei36 || this.device.qImei16;
     if (this.apk.qua) {
         const time = Date.now();
@@ -140,18 +119,11 @@ async function submitSsoPacket(cmd, callbackId, body) {
             callbackId: callbackId,
             androidId: this.device.android_id,
             qimei36: qImei36 || this.device.android_id,
-            buffer: body.toString('hex'),
-            guid: this.device.guid.toString('hex'),
+            buffer: body.toString("hex"),
+            guid: this.device.guid.toString("hex"),
         };
-        let url = new URL(this.sig.sign_api_addr);
-        let path = url.pathname;
-        if (path.substring(path.length - 1) === '/') {
-            path += 'submit';
-        }
-        else {
-            path = path.replace(/\/sign$/, '/submit');
-        }
-        url.pathname = path;
+        const url = new URL(this.sig.url);
+        url.pathname += "submit";
         const data = await get.bind(this)(url.href, post_params, true);
         this.emit("internal.verbose", `submitSsoPacket result(${Date.now() - time}ms): ${JSON.stringify(data)}`, base_client_1.VerboseLevel.Debug);
         if (data.code === 0) {
@@ -166,20 +138,12 @@ async function submitSsoPacket(cmd, callbackId, body) {
 exports.submitSsoPacket = submitSsoPacket;
 async function getApiQQVer() {
     let QQVer = this.config.ver;
-    if (!this.sig.sign_api_addr) {
+    if (!this.sig.url)
         return QQVer;
-    }
     const apks = this.getApkInfoList(this.config.platform);
     const packageName = this.apk.id;
-    let url = new URL(this.sig.sign_api_addr);
-    let path = url.pathname;
-    if (path.substring(path.length - 1) === '/') {
-        path += 'ver';
-    }
-    else {
-        path = path.replace(/\/sign$/, '/ver');
-    }
-    url.pathname = path;
+    const url = new URL(this.sig.url);
+    url.pathname += "ver";
     const data = await get.bind(this)(url.href);
     if (data.code === 0) {
         const vers = data?.data[packageName];
@@ -197,18 +161,10 @@ async function getApiQQVer() {
 exports.getApiQQVer = getApiQQVer;
 async function getCmdWhiteList() {
     let whiteList = [];
-    if (!this.sig.sign_api_addr) {
+    if (!this.sig.url)
         return whiteList;
-    }
-    let url = new URL(this.sig.sign_api_addr);
-    let path = url.pathname;
-    if (path.substring(path.length - 1) === '/') {
-        path += 'cmd_whitelist';
-    }
-    else {
-        path = path.replace(/\/sign$/, '/cmd_whitelist');
-    }
-    url.pathname = path;
+    const url = new URL(this.sig.url);
+    url.pathname += "cmd_whitelist";
     const data = await get.bind(this)(url.href, {
         ver: this.apk.ver,
         uin: this.uin || 0
@@ -223,8 +179,8 @@ async function get(url, params = {}, post = false) {
     const config = {
         timeout: 20000,
         headers: {
-            'User-Agent': `icqq@${this.pkg.version} (Released on ${this.pkg.upday})`,
-            'Content-Type': "application/x-www-form-urlencoded"
+            "User-Agent": `icqq@${this.pkg.version} (Released on ${this.pkg.upday})`,
+            "Content-Type": "application/x-www-form-urlencoded"
         }
     };
     let data = { code: -1 };

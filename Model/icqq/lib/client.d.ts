@@ -282,11 +282,13 @@ export declare class Client extends BaseClient {
     getStrangerList(): Map<number, StrangerInfo>;
     /** @cqhttp use {@link User.getSimpleInfo} */
     getStrangerInfo(user_id: number): Promise<{
-        user_id: number; /** 黑名单列表 */
-        nickname: string;
+        user_id: number;
+        nickname: string; /** 勿手动修改这些属性 */
+        /** 在线状态 */
         sex: Gender;
         age: number;
-        area: string; /** 漫游表情缓存 */
+        /** @todo 未知属性 */
+        area: string;
     }>;
     /** @cqhttp use {@link Group.info} or {@link Group.renew} */
     getGroupInfo(group_id: number, no_cache?: boolean): Promise<GroupInfo>;

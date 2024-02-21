@@ -173,10 +173,10 @@ class Client extends core_1.BaseClient {
             },
         });
         this.logger = log4js.getLogger("[icqq]");
-        if (!config.sign_api_addr) {
+        if (config.sign_api_addr)
+            this.setSignServer(config.sign_api_addr);
+        else
             this.logger.warn(`未配置签名API地址，登录/消息发送可能失败`);
-        }
-        this.setSignServer(config.sign_api_addr);
         if (typeof uin === "number")
             this.uin = uin;
         this.device.mtime = Math.floor(fs.statSync(file).mtimeMs || Date.now());

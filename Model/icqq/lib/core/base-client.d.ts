@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /// <reference types="node" />
-import { Listener, Matcher, ToDispose, Trapper } from 'triptrap';
+import { Listener, Matcher, ToDispose, Trapper } from "triptrap";
 import { Apk, Device, Platform, ShortDevice } from "./device";
 import { Config } from "../client";
 declare const FN_NEXT_SEQ: unique symbol;
@@ -115,7 +115,7 @@ export declare class BaseClient extends Trapper {
     constructor(p: Platform | undefined, d: ShortDevice, config: Required<Config>);
     /** 设置连接服务器，不设置则自动搜索 */
     setRemoteServer(host?: string, port?: number): void;
-    setSignServer(addr?: string): Promise<void>;
+    setSignServer(addr: string): Promise<void>;
     once(matcher: Matcher, listener: Listener): Trapper.Dispose;
     off(matcher: Matcher): void;
     emit(matcher: Matcher, ...args: any[]): void;
