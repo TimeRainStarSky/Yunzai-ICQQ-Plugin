@@ -25,7 +25,7 @@ const adapter = new class ICQQAdapter {
   constructor() {
     this.id = "QQ"
     this.name = "ICQQ"
-    this.version = "v0.6.11"
+    this.version = "v1.0.3"
   }
 
   async uploadVideo(id, file) {
