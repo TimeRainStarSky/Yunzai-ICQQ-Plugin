@@ -1,0 +1,8 @@
+{
+  "name": "ICQQ-Plugin",
+  "type": "module",
+  "author": "TimeRainStarSky",
+  "dependencies": {
+    "icqq": "*"
+  }
+}
