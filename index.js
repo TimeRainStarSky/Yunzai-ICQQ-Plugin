@@ -187,6 +187,7 @@ const adapter = new class ICQQAdapter {
         case "xml":
         case "json":
         case "face":
+        case "poke":
           messages.push([i])
           break
         case "file":
@@ -194,10 +195,25 @@ const adapter = new class ICQQAdapter {
           content += this.makeMarkdownText(`文件：${i.file}`)
           break
         case "at":
-          if (i.qq == "all")
+          if (i.qq == "all") {
             content += "[@全体成员](mqqapi://markdown/mention?at_type=everyone)"
-          else
-            content += `[@${i.name || i.qq}](mqqapi://markdown/mention?at_type=1&at_tinyid=${i.qq})`
+          } else {
+            if (!i.name) {
+              let info
+              if (pick.pickMember)
+                info = pick.pickMember(i.qq).info
+              else
+                info = Bot[id].pickFriend(i.qq).info
+              if (!info)
+                info = await Bot[id].pickUser(i.qq).getSimpleInfo()
+              if (info)
+                i.name = info.card || info.nickname
+            }
+
+            if (i.name) i.name += `(${i.qq})`
+            else i.name = i.qq
+            content += `[@${i.name}](mqqapi://markdown/mention?at_type=1&at_tinyid=${i.qq})`
+          }
           break
         case "text":
           content += this.makeMarkdownText(i.text)
@@ -227,7 +243,6 @@ const adapter = new class ICQQAdapter {
 
     if (content)
       messages.unshift([{ type: "markdown", content }])
-
     if (button.length) {
       for (const i of messages) {
         if (i[0].type == "markdown")
@@ -264,6 +279,7 @@ const adapter = new class ICQQAdapter {
         case "video":
         case "xml":
         case "json":
+        case "poke":
           messages.push([i])
           continue
         case "file":
@@ -272,6 +288,21 @@ const adapter = new class ICQQAdapter {
         case "reply":
           reply = i
           continue
+        case "at":
+          if (i.qq != "all" && !i.name) {
+            let info
+            if (pick.pickMember)
+              info = pick.pickMember(i.qq).info
+            else
+              info = Bot[id].pickFriend(i.qq).info
+            if (!info)
+              info = await Bot[id].pickUser(i.qq).getSimpleInfo()
+            if (info)
+              i.name = info.card || info.nickname
+          }
+          if (i.name && !i.text)
+            i.text = `${i.name}(${i.qq})`
+          break
         case "markdown":
           forward.push(...(await this.makeMarkdownMsg(id, pick, msg)))
           continue
