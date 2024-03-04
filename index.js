@@ -40,7 +40,7 @@ const adapter = new class ICQQAdapter {
   constructor() {
     this.id = "QQ"
     this.name = "ICQQ"
-    this.version = icqq.package.version
+    this.version = `v${icqq.package.version}`
   }
 
   async uploadVideo(id, file) {
@@ -231,7 +231,7 @@ const adapter = new class ICQQAdapter {
         case "node":
           for (const node of i.data)
             for (const message of await this.makeMarkdownMsg(id, pick, node.message))
-              forward.push({ ...node, ...message })
+              forward.push({ user_id: 80000000, nickname: "匿名消息", ...node, ...message })
           break
         case "raw":
           messages.push([i])
@@ -321,7 +321,7 @@ const adapter = new class ICQQAdapter {
         case "node":
           for (const node of i.data)
             for (const message of await this.makeMsg(id, pick, node.message))
-              forward.push({ ...node, type: "node", message })
+              forward.push({ user_id: 80000000, nickname: "匿名消息", ...node, type: "node", message })
           continue
       }
       message.push(i)
