@@ -479,11 +479,21 @@ const adapter = new class ICQQAdapter {
 
     bot.on("system.login.qrcode", async data => {
       send([
-        `[${id}] 扫码完成后，${getTips}继续登录`,
+        `[${id}] 扫码登录`,
         segment.image(data.image),
       ])
-      while (true) if (await get() == "继续登录") break
-      bot.qrcodeLogin()
+      while (true) {
+        await Bot.sleep(3000)
+        const { retcode } = await bot.queryQrcodeResult()
+        switch (retcode) {
+          case 0:
+            return bot.qrcodeLogin()
+          case 17:
+            return send(`二维码已过期，发送 #Bot上线${id} 重新登录`)
+          case 54:
+            return send(`登录取消，发送 #Bot上线${id} 重新登录`)
+        }
+      }
     })
 
     bot.on("system.login.slider", async data => {
@@ -572,6 +582,7 @@ const adapter = new class ICQQAdapter {
       adapter: this,
       sdk: bot,
       icqq,
+      avatar: bot.pickFriend(id).getAvatarUrl(),
       version: {
         id: this.id,
         name: this.name,
@@ -587,8 +598,6 @@ const adapter = new class ICQQAdapter {
       bot.once("system.online", resolve)
       bot.login(id, password)
     })
-
-    Bot[id].avatar = bot.pickFriend(id).getAvatarUrl()
 
     bot.on("message", data => {
       this.makeEvent(data)
