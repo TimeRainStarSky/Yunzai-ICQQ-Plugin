@@ -95,7 +95,7 @@ const adapter = new class ICQQAdapter {
         label: button.text,
         visited_label: button.clicked_text,
         style,
-        ...button.ICQQ?.render_data,
+        ...button.QQBot?.render_data,
       }
     }
 
@@ -104,7 +104,7 @@ const adapter = new class ICQQAdapter {
         type: 0,
         permission: { type: 2 },
         data: button.link,
-        ...button.ICQQ?.action,
+        ...button.QQBot?.action,
       }
     else if (button.input)
       msg.action = {
@@ -112,7 +112,7 @@ const adapter = new class ICQQAdapter {
         permission: { type: 2 },
         data: button.input,
         enter: button.send,
-        ...button.ICQQ?.action,
+        ...button.QQBot?.action,
       }
     else if (button.callback)
       msg.action = {
@@ -120,7 +120,7 @@ const adapter = new class ICQQAdapter {
         permission: { type: 2 },
         data: button.callback,
         enter: true,
-        ...button.ICQQ?.action,
+        ...button.QQBot?.action,
       }
     else return false
 
@@ -448,15 +448,12 @@ const adapter = new class ICQQAdapter {
       platform: token.shift(),
       data_dir: `${process.cwd()}/data/icqq/${id}`,
     }
-
-    token = token.join(":")
-    if (token) {
-      if (token.match(/^https?:\/\//)) {
-        cfg.sign_api_addr = token
-      } else {
-        cfg.ver = token
-      }
-    }
+    const platform = token.shift()
+    if (platform) cfg.platform = platform
+    const ver = token.shift()
+    if (ver) cfg.ver = ver
+    const sign_api_addr = token.join(":")
+    if (sign_api_addr) cfg.sign_api_addr = sign_api_addr
 
     const bot = icqq.createClient(cfg)
     const log = {}
