@@ -337,7 +337,7 @@ const adapter = new class ICQQAdapter {
   }
 
   async sendMsg(id, pick, msg, ...args) {
-    const rets = { message_id: [], data: [] }
+    const rets = { message_id: [], data: [], error: [] }
     let msgs
 
     const sendMsg = async () => { for (const i of msgs) try {
@@ -350,6 +350,7 @@ const adapter = new class ICQQAdapter {
         rets.message_id.push(ret.message_id)
     } catch (err) {
       Bot.makeLog("error", ["发送消息错误", i, err], id)
+      rets.error.push(err)
       return false
     }}
 
