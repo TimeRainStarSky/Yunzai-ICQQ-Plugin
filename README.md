@@ -23,9 +23,13 @@ TRSS-Yunzai ICQQ Bot 适配器 插件
 ## 安装 ICQQ
 
 ```sh
-# https://github.com/settings/tokens/new 勾选 repo 生成 token
-git clone --depth 1 --single-branch -b build https://user:token@github.com/icqqjs/icqq plugins/ICQQ-Plugin/Model/icqq
-pnpm i
+pnpm login --scope=@icqqjs --auth-type=legacy --registry=https://npm.pkg.github.com
+
+UserName: # 你的 GitHub 账号
+Password: # 前往 https://github.com/settings/tokens/new 获取，scopes 勾选 read:packages
+E-Mail: # 你的公开邮箱地址
+
+pnpm add icqq@npm:@icqqjs/icqq
 ```
 
 ## 格式示例
