@@ -438,6 +438,12 @@ const adapter = new class ICQQAdapter {
         get: (target, prop, receiver) => this.getPick(data.self_id, pick, target, prop, receiver),
       })
     }
+
+    if (data.post_type == "message") try {
+      data.raw_message = data.toString()
+    } catch (err) {
+      Bot.makeLog("error", err, data.self_id)
+    }
   }
 
   async connect(token, send = msg => Bot.sendMasterMsg(msg), get) {
