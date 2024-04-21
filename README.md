@@ -23,6 +23,8 @@ TRSS-Yunzai ICQQ Bot 适配器 插件
 ## 安装 ICQQ
 
 ```sh
+cd plugins/ICQQ-Plugin
+
 pnpm login --scope=@icqqjs --auth-type=legacy --registry=https://npm.pkg.github.com
 
 UserName: # 你的 GitHub 账号

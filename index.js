@@ -452,7 +452,6 @@ const adapter = new class ICQQAdapter {
     const password = token.shift()
     const cfg = {
       ...config.bot,
-      platform: token.shift(),
       data_dir: `${process.cwd()}/data/icqq/${id}`,
     }
     const platform = token.shift()
