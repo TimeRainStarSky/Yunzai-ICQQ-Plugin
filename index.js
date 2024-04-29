@@ -181,16 +181,14 @@ const adapter = new class ICQQAdapter {
         i = { type: "text", text: i }
 
       switch (i.type) {
-        case "record":
-        case "video":
-        case "reply":
-        case "xml":
-        case "json":
-        case "face":
-        case "poke":
-          messages.push([i])
+        case "text":
+          content += this.makeMarkdownText(i.text)
           break
-        case "file":
+        case "image": {
+          const { des, url } = await this.makeMarkdownImage(id, i.file)
+          content += `${des}${url}`
+          break
+        } case "file":
           if (i.file) i.file = await Bot.fileToUrl(i.file, i)
           content += this.makeMarkdownText(`文件：${i.file}`)
           break
@@ -215,14 +213,7 @@ const adapter = new class ICQQAdapter {
             content += `[@${i.name}](mqqapi://markdown/mention?at_type=1&at_tinyid=${i.qq})`
           }
           break
-        case "text":
-          content += this.makeMarkdownText(i.text)
-          break
-        case "image": {
-          const { des, url } = await this.makeMarkdownImage(id, i.file)
-          content += `${des}${url}`
-          break
-        } case "markdown":
+        case "markdown":
           content += i.data
           break
         case "button":
@@ -234,10 +225,14 @@ const adapter = new class ICQQAdapter {
               forward.push({ user_id: 80000000, nickname: "匿名消息", ...node, ...message })
           break
         case "raw":
-          messages.push([i])
+          messages.push([icqq.Converter.prototype.hasOwnProperty(i.data?.type) ? i.data : i])
           break
         default:
-          content += this.makeMarkdownText(JSON.stringify(i))
+          if (icqq.Converter.prototype.hasOwnProperty(i.type)) {
+            messages.push([i])
+            continue
+          }
+          content += this.makeMarkdownText(Bot.String(i))
       }
     }
 
@@ -275,13 +270,10 @@ const adapter = new class ICQQAdapter {
 
     for (let i of Array.isArray(msg) ? msg : [msg]) {
       if (typeof i == "object") switch (i.type) {
-        case "record":
-        case "video":
-        case "xml":
-        case "json":
-        case "poke":
-          messages.push([i])
-          continue
+        case "text":
+        case "image":
+        case "face":
+          break
         case "file":
           await pick.sendFile(i.file, i.name)
           continue
@@ -323,6 +315,16 @@ const adapter = new class ICQQAdapter {
             for (const message of await this.makeMsg(id, pick, node.message))
               forward.push({ user_id: 80000000, nickname: "匿名消息", ...node, type: "node", message })
           continue
+        case "raw":
+          if (icqq.Converter.prototype.hasOwnProperty(i.data?.type))
+            i = i.data
+          break
+        default:
+          if (icqq.Converter.prototype.hasOwnProperty(i.type)) {
+            messages.push([i])
+            continue
+          }
+          i = Bot.String(i)
       }
       message.push(i)
     }
