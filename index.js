@@ -1,7 +1,7 @@
 logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
 import makeConfig from "../../lib/plugins/config.js"
-import { randomUUID } from "node:crypto"
+import { ulid } from "ulid"
 
 import url from "url"
 import path from "path"
@@ -90,7 +90,7 @@ const adapter = new class ICQQAdapter {
 
   makeButton(id, pick, button, style, forward) {
     const msg = {
-      id: randomUUID(),
+      id: ulid(),
       render_data: {
         label: button.text,
         visited_label: button.clicked_text,
@@ -625,7 +625,7 @@ const adapter = new class ICQQAdapter {
         Bot.em(i, data)
       })
 
-    logger.mark(`${logger.blue(`[${id}]`)} ${this.name}(${this.id}) ${this.version} 已连接`)
+    Bot.makeLog("mark", `${this.name}(${this.id}) ${this.version} 已连接`, id)
     Bot.em(`connect.${id}`, { self_id: id })
     return true
   }
