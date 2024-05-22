@@ -263,12 +263,14 @@ const adapter = new class ICQQAdapter {
   }
 
   async makeMsg(id, pick, msg) {
+    if (!Array.isArray(msg))
+      msg = [msg]
     const message = []
     const messages = []
     const forward = []
     let reply
 
-    for (let i of Array.isArray(msg) ? msg : [msg]) {
+    for (let i of msg) {
       if (typeof i == "object") switch (i.type) {
         case "text":
         case "image":
@@ -318,6 +320,9 @@ const adapter = new class ICQQAdapter {
         case "raw":
           if (icqq.Converter.prototype.hasOwnProperty(i.data?.type))
             i = i.data
+          break
+        case "long_msg":
+          if (msg.length > 1) continue
           break
         default:
           if (icqq.Converter.prototype.hasOwnProperty(i.type)) {
