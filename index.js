@@ -15,9 +15,14 @@ for (const i of ["Model", "node_modules"]) try {
   const dir = `${__dirname}/${i}/icqq/`
   if (!await fs.stat(dir)) continue
   icqq = (await import(`file://${dir}lib/index.js`)).default
-  icqq.package = JSON.parse(await fs.readFile(`${dir}package.json`, "utf-8"))
+  icqq.package = JSON.parse(await fs.readFile(`${dir}package.json`, "utf-8"));
+  (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList
   break
-} catch (err) {}
+} catch (err) {
+  icqq = err
+}
+
+if (icqq instanceof Error) throw icqq
 
 const { config, configSave } = await makeConfig("ICQQ", {
   tips: "",
@@ -200,10 +205,7 @@ const adapter = new class ICQQAdapter {
               let info
               if (pick.pickMember)
                 info = pick.pickMember(i.qq).info
-              else
-                info = Bot[id].pickFriend(i.qq).info
-              if (!info)
-                info = await Bot[id].pickUser(i.qq).getSimpleInfo()
+              info ??= Bot[id].pickFriend(i.qq).info || await Bot[id].pickUser(i.qq).getSimpleInfo()
               if (info)
                 i.name = info.card || info.nickname
             }
