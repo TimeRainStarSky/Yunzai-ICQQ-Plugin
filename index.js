@@ -513,49 +513,106 @@ const adapter = new class ICQQAdapter {
     bot.on("system.login.slider", async data => {
       send(
         `[${id}] 请选择滑动验证方式\n`+
+        `Bot 与浏览器处于同一网络下推荐网页，否则网页反代\n\n`+
+        `网页反代验证：${getTips}网页反代\n`+
         `网页验证：${getTips}网页\n`+
         `请求码验证：${getTips}请求码\n`+
         `手动验证：${getTips}ticket\n`+
         data.url
       )
-      const msg = await get()
-      let fnc
-      if (msg === "网页") {
-        const url = `https://hlhs-nb.cn/captcha/slider?key=${id}`
-        await fetch(url, {
-          method: "POST",
-          body: JSON.stringify({ url: data.url }),
-        })
-        send(url)
-
-        fnc = async () => {
-          const res = await (await fetch(url, {
+      const msg = await get(), fnc = {}
+      switch (msg) {
+        case "网页反代": {
+          const url = `https://hlhs-nb.cn/captcha/slider?key=${id}`
+          const ws = new (await import("ws")).WebSocket(url)
+          const wsSend = data => {
+            Bot.makeLog("debug", [`发送 ${url}`, data], id)
+            ws.send(JSON.stringify(data))
+          }
+          let ticket
+          fnc.ticket = () => {
+            if (ticket instanceof Error)
+              throw ticket
+            return ticket
+          }
+          fnc.close = () => ws.terminate()
+          ws.onclose = () => {
+            Bot.makeLog("debug", `连接关闭 ${url}`, id)
+            ticket ??= new Error(`连接关闭 ${url}`)
+          }
+          ws.onerror = ({ error }) => {
+            Bot.makeLog("debug", [`连接错误 ${url}`, error], id)
+            ticket ??= new Error(`连接错误 ${url}`, { cause: error })
+            fnc.close()
+          }
+          ws.onopen = () => {
+            wsSend({ type: "register", payload: { url: data.url } })
+            send(url)
+          }
+          ws.onmessage = async msg => { try {
+            const data = JSON.parse(msg.data)
+            Bot.makeLog("debug", [`收到 ${url}`, data], id)
+            switch (data.type) {
+              case "ticket":
+                ticket = data.payload.ticket
+                fnc.close()
+                break
+              case "handle":
+                const { url, ...opts } = data.payload
+                const req = await fetch(url, opts)
+                data.payload = {
+                  result: Buffer.from(await req.arrayBuffer()).toString("base64"),
+                  headers: Object.fromEntries(req.headers.entries()),
+                }
+                wsSend(data)
+                break
+              default:
+                Bot.makeLog("info", data, id)
+            }
+          } catch (err) {
+            Bot.makeLog("error", err, id)
+          }}
+          break
+        } case "网页": {
+          const url = `https://hlhs-nb.cn/captcha/slider?key=${id}`
+          await fetch(url, {
             method: "POST",
-            body: JSON.stringify({ submit: id }),
-          })).json()
-          return res.data?.ticket
-        }
-      } else if (msg === "请求码") {
-        const url = data.url.replace("ssl.captcha.qq.com", "txhelper.glitch.me")
-        const code = await (await fetch(url)).text()
-        send(code)
+            body: JSON.stringify({ url: data.url }),
+          })
+          send(url)
 
-        fnc = async () => {
-          const res = await (await fetch(url)).text()
-          if (res !== code) return res
-        }
-      } else {
-        return bot.submitSlider(msg)
+          fnc.ticket = async () => {
+            const res = await (await fetch(url, {
+              method: "POST",
+              body: JSON.stringify({ submit: id }),
+            })).json()
+            return res.data?.ticket
+          }
+          break
+        } case "请求码": {
+          const url = data.url.replace("ssl.captcha.qq.com", "txhelper.glitch.me")
+          const code = await (await fetch(url)).text()
+          send(code)
+
+          fnc.ticket = async () => {
+            const res = await (await fetch(url)).text()
+            if (res !== code) return res
+          }
+          break
+        } default:
+          return bot.submitSlider(msg)
       }
 
-      let i = 0
-      while (true) {
+      try { for (let i=0; i<60; i++) {
         await Bot.sleep(3000)
-        const msg = await fnc()
-        if (msg) return bot.submitSlider(msg)
-        i++
-        if (i > 60) return send(`登录超时，发送 #Bot上线${id} 重新登录`)
+        const ticket = await fnc.ticket()
+        if (ticket) return bot.submitSlider(ticket)
+      }} catch (err) {
+        Bot.makeLog("error", err, id)
+        return send(`滑动验证错误，发送 #Bot上线${id} 重新登录`)
       }
+      if (fnc.close) fnc.close()
+      return send(`滑动验证超时，发送 #Bot上线${id} 重新登录`)
     })
 
     bot.on("system.login.device", async data => {
