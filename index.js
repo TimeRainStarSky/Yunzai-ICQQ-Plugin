@@ -455,6 +455,13 @@ const adapter = new class ICQQAdapter {
     } catch (err) {
       Bot.makeLog("error", err, data.self_id)
     }
+
+    if (data.source) {
+      if (data.source.seq && data.group?.getChatHistory)
+        data.getReply = async () => (await data.group.getChatHistory(data.source.seq, 1))[0]
+      else if (data.source.time && data.friend?.getChatHistory)
+        data.getReply = async () => (await data.friend.getChatHistory(data.source.time, 1))[0]
+    }
   }
 
   async connect(token, send = msg => Bot.sendMasterMsg(msg), get) {
