@@ -17,6 +17,7 @@ for (const i of ["Model", "node_modules"]) try {
   icqq = (await import(`file://${dir}lib/index.js`)).default
   icqq.package = JSON.parse(await fs.readFile(`${dir}package.json`, "utf-8"));
   (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList
+  icqq.Parser.prototype.parseNewImgElem = (await import("./Model/parser.js")).parseNewImgElem.bind(icqq.Parser.prototype, (await import(`file://${dir}lib/message/image.js`)).buildImageFileParam)
   break
 } catch (err) {
   icqq = err
