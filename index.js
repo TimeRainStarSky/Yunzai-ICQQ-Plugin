@@ -16,8 +16,13 @@ for (const i of ["Model", "node_modules"]) try {
   if (!await fs.stat(dir)) continue
   icqq = (await import(`file://${dir}lib/index.js`)).default
   icqq.package = JSON.parse(await fs.readFile(`${dir}package.json`, "utf-8"));
-  (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList
-  icqq.Parser.prototype.parseNewImgElem = (await import("./Model/parser.js")).parseNewImgElem.bind(icqq.Parser.prototype, (await import(`file://${dir}lib/message/image.js`)).buildImageFileParam)
+  (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList;
+  (await import(`file://${dir}lib/message/parser.js`)).default.Parser = (await import("./Model/parser.js")).Parser
+  Object.assign(icqq.Parser.prototype, {
+    core: icqq.core,
+    face: await import(`file://${dir}lib/message/face.js`),
+    image: await import(`file://${dir}lib/message/image.js`),
+  })
   break
 } catch (err) {
   icqq = err
@@ -400,9 +405,9 @@ const adapter = new class ICQQAdapter {
   getPick(id, pick, target, prop, receiver) {
     switch (prop) {
       case "sendMsg":
-        return (...args) => this.sendMsg(id, pick, ...args)
+        return this.sendMsg.bind(this, id, pick)
       case "recallMsg":
-        return message_id => this.recallMsg(id, pick, message_id)
+        return this.recallMsg.bind(this, id, pick)
       case "makeForwardMsg":
         return Bot.makeForwardMsg
       case "sendForwardMsg":
@@ -415,7 +420,7 @@ const adapter = new class ICQQAdapter {
             args[i] = Number(args[i]) || args[i]
           const pickMember = pick[prop](...args)
           return new Proxy({}, {
-            get: (target, prop, receiver) => this.getPick(id, pickMember, target, prop, receiver),
+            get: this.getPick.bind(this, id, pickMember),
           })
         }
       case "raw":
@@ -435,7 +440,7 @@ const adapter = new class ICQQAdapter {
             args[i] = Number(args[i]) || args[i]
           const pick = target.sdk[prop](...args)
           return new Proxy({}, {
-            get: (target, prop, receiver) => this.getPick(id, pick, target, prop, receiver),
+            get: this.getPick.bind(this, id, pick),
           })
         }
     }
@@ -447,7 +452,7 @@ const adapter = new class ICQQAdapter {
       if (typeof data[i] !== "object") continue
       const pick = data[i]
       data[i] = new Proxy({}, {
-        get: (target, prop, receiver) => this.getPick(data.self_id, pick, target, prop, receiver),
+        get: this.getPick.bind(this, data.self_id, pick),
       })
     }
 
@@ -465,7 +470,7 @@ const adapter = new class ICQQAdapter {
     }
   }
 
-  async connect(token, send = msg => Bot.sendMasterMsg(msg), get) {
+  async connect(token, send = Bot.sendMasterMsg.bind(Bot), get) {
     token = token.split(":")
     const id = Number(token.shift())
     const password = token.shift()
@@ -543,14 +548,14 @@ const adapter = new class ICQQAdapter {
               throw ticket
             return ticket
           }
-          fnc.close = () => ws.terminate()
+          fnc.close = ws.terminate.bind(ws)
           ws.onclose = () => {
             Bot.makeLog("debug", `连接关闭 ${url}`, id)
-            ticket ??= new Error(`连接关闭 ${url}`)
+            ticket ??= Error(`连接关闭 ${url}`)
           }
           ws.onerror = ({ error }) => {
             Bot.makeLog("debug", [`连接错误 ${url}`, error], id)
-            ticket ??= new Error(`连接错误 ${url}`, { cause: error })
+            ticket ??= Error(`连接错误 ${url}`, { cause: error })
             fnc.close()
           }
           ws.onopen = () => {
@@ -667,11 +672,11 @@ const adapter = new class ICQQAdapter {
         name: this.name,
         version: this.version,
       },
-      uploadImage: file => this.uploadImage(id, file),
-      uploadRecord: file => this.uploadRecord(id, file),
-      uploadVideo: file => this.uploadVideo(id, file),
+      uploadImage: this.uploadImage.bind(this, id),
+      uploadRecord: this.uploadRecord.bind(this, id),
+      uploadVideo: this.uploadVideo.bind(this, id),
     }, {
-      get: (target, prop, receiver) => this.getBot(id, target, prop, receiver),
+      get: this.getBot.bind(this, id),
     })
     await new Promise(resolve => {
       bot.once("system.online", resolve)
@@ -748,7 +753,7 @@ export class ICQQAdapter extends plugin {
       config.token = config.token.filter(item => item !== token)
       this.reply(`账号已删除，重启后生效，共${config.token.length}个账号`, true)
     } else {
-      if (await adapter.connect(token, msg => this.reply(msg, true), () => Bot.getTextMsg(this.e))) {
+      if (await adapter.connect(token, msg => this.reply(msg, true), Bot.getTextMsg.bind(Bot, this.e))) {
         config.token.push(token)
         this.reply(`账号已连接，共${config.token.length}个账号`, true)
       } else {
