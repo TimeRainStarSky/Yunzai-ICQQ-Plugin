@@ -17,7 +17,7 @@ for (const i of ["Model", "node_modules"]) try {
   icqq = (await import(`file://${dir}lib/index.js`)).default
   icqq.package = JSON.parse(await fs.readFile(`${dir}package.json`, "utf-8"));
   (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList;
-  (await import(`file://${dir}lib/message/parser.js`)).default.Parser = (await import("./Model/parser.js")).Parser
+  Object.assign((await import(`file://${dir}lib/message/parser.js`)).default, (await import("./Model/parser.js")))
   Object.assign(icqq.Parser.prototype, {
     core: icqq.core,
     face: await import(`file://${dir}lib/message/face.js`),
