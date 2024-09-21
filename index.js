@@ -590,6 +590,7 @@ const adapter = new class ICQQAdapter {
           const url = `https://HanXuan-GT.HF.Space/captcha/slider?key=${id}`
           await fetch(url, {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: data.url }),
           })
           send(url)
@@ -597,6 +598,7 @@ const adapter = new class ICQQAdapter {
           fnc.ticket = async () => {
             const res = await (await fetch(url, {
               method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ submit: id }),
             })).json()
             return res.data?.ticket
