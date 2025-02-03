@@ -413,7 +413,9 @@ const adapter = new class ICQQAdapter {
       case "sendForwardMsg":
         return async (msg, ...args) => this.sendMsg(id, pick, await Bot.makeForwardMsg(msg), ...args)
       case "getInfo":
-        return () => pick.info
+        return () => pick.info ||
+          (typeof pick.renew === "function" && pick.renew()) ||
+          (typeof pick.getSimpleInfo === "function" && pick.getSimpleInfo())
       case "pickMember":
         return (...args) => {
           for (const i in args)
