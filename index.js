@@ -446,7 +446,11 @@ const adapter = new class ICQQAdapter {
           })
         }
     }
-    return target[prop] ?? target.sdk[prop]
+    if (prop in target)
+      return target[prop]
+    if (typeof target.sdk[prop]?.bind === "function")
+      return target.sdk[prop].bind(target.sdk)
+    return target.sdk[prop]
   }
 
   makeEvent(data) {
