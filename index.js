@@ -316,6 +316,12 @@ const adapter = new class ICQQAdapter {
                 appid: this.markdown_appid,
                 content: { rows: this.makeButtons(id, pick, i.data)},
               })
+            else if (config.markdown.button === "separate")
+              messages.push([{
+                type: "button",
+                appid: this.markdown_appid,
+                content: { rows: this.makeButtons(id, pick, i.data)},
+              }])
             else
               return [await this.makeMarkdownMsg(id, pick, msg)]
           }
