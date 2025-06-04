@@ -517,6 +517,7 @@ const adapter = new class ICQQAdapter {
     }
 
     bot.on("system.login.qrcode", async data => {
+      Bot.em("system.login.qrcode", data)
       send([
         `[${id}] 扫码登录`,
         segment.image(data.image),
@@ -536,6 +537,7 @@ const adapter = new class ICQQAdapter {
     })
 
     bot.on("system.login.slider", async data => {
+      Bot.em("system.login.slider", data)
       send(
         `[${id}] 请选择滑动验证方式\n`+
         `Bot 与浏览器处于同一网络下推荐网页，否则网页反代\n\n`+
@@ -643,6 +645,7 @@ const adapter = new class ICQQAdapter {
     })
 
     bot.on("system.login.device", async data => {
+      Bot.em("system.login.device", data)
       send(
         `[${id}] 请选择设备锁验证方式\n`+
         `短信验证：${getTips}短信\n`+
@@ -663,15 +666,22 @@ const adapter = new class ICQQAdapter {
       }
     })
 
-    bot.on("system.login.error", data => send(
-      `[${id}] 登录错误：${data.message}(${data.code})\n`+
-      `发送 #Bot上线${id} 重新登录`
-    ))
-    bot.on("system.offline", data => send(
-      `[${id}] 账号下线：${data.message}\n`+
-      `发送 #Bot上线${id} 重新登录`
-    ))
-    bot.on("system.online", () => {
+    bot.on("system.login.error", data => {
+      Bot.em("system.login.error", data)
+      send(
+        `[${id}] 登录错误：${data.message}(${data.code})\n`+
+        `发送 #Bot上线${id} 重新登录`
+      )
+    })
+    bot.on("system.offline", data => {
+      Bot.em("system.offline", data)
+      send(
+        `[${id}] 账号下线：${data.message}\n`+
+        `发送 #Bot上线${id} 重新登录`
+      )
+    })
+    bot.on("system.online", data => {
+      Bot.em("system.online", data)
       bot.logger = log
       if (sendMsg) send(`[${id}] 登录完成`)
     })
