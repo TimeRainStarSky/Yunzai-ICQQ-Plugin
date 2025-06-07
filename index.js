@@ -14,15 +14,18 @@ let icqq
 for (const i of ["Model", "node_modules"]) try {
   const dir = `${__dirname}/${i}/icqq/`
   if (!await fs.stat(dir)) continue
-  icqq = (await import(`file://${dir}lib/index.js`)).default
-  icqq.package = JSON.parse(await fs.readFile(`${dir}package.json`, "utf-8"));
-  (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList;
-  Object.assign((await import(`file://${dir}lib/message/parser.js`)).default, (await import("./Model/parser.js")))
-  Object.assign(icqq.Parser.prototype, {
-    core: icqq.core,
-    face: await import(`file://${dir}lib/message/face.js`),
-    image: await import(`file://${dir}lib/message/image.js`),
-  })
+  const p = JSON.parse(await fs.readFile(`${dir}package.json`, "utf8"))
+  icqq = (await import(`file://${dir}${p.main}`)).default
+  icqq.package = p
+  try {
+    (await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (await import("./Model/device.js")).getApkInfoList
+    Object.assign((await import(`file://${dir}lib/message/parser.js`)).default, (await import("./Model/parser.js")))
+    Object.assign(icqq.Parser.prototype, {
+      core: icqq.core,
+      face: await import(`file://${dir}lib/message/face.js`),
+      image: await import(`file://${dir}lib/message/image.js`),
+    })
+  } catch {}
   break
 } catch (err) {
   icqq = err
