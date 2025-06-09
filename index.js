@@ -1,6 +1,7 @@
 logger.info(logger.yellow("- 正在加载 ICQQ 适配器插件"))
 
 import makeConfig from "../../lib/plugins/config.js"
+import cfg from "../../lib/config/config.js"
 import { ulid } from "ulid"
 
 import url from "url"
@@ -489,18 +490,19 @@ const adapter = new class ICQQAdapter {
     token = token.split(":")
     const id = Number(token.shift())
     const password = token.shift()
-    const cfg = {
-      ...config.bot,
+    const opts = {
       data_dir: `${process.cwd()}/data/icqq/${id}`,
+      cache_group_member: cfg.bot.cache_group_member,
+      ...config.bot,
     }
     const platform = token.shift()
-    if (platform) cfg.platform = platform
+    if (platform) opts.platform = platform
     const ver = token.shift()
-    if (ver) cfg.ver = ver
+    if (ver) opts.ver = ver
     const sign_api_addr = token.join(":")
-    if (sign_api_addr) cfg.sign_api_addr = sign_api_addr
+    if (sign_api_addr) opts.sign_api_addr = sign_api_addr
 
-    const bot = icqq.createClient(cfg)
+    const bot = icqq.createClient(opts)
     const log = {}
     for (const i of ["trace", "debug", "info", "mark", "warn", "error", "fatal"])
       log[i] = (...args) => Bot.makeLog(i, args, id)
