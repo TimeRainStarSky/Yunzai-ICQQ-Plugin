@@ -606,7 +606,7 @@ const adapter = new class ICQQAdapter {
           }}
           break
         } case "网页": {
-          const url = `https://HanXuan-GT.HF.Space/captcha/slider?key=${id}`
+          const url = `https://GT.928100.xyz/captcha/slider?key=${id}`
           await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
