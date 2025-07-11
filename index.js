@@ -555,7 +555,7 @@ const adapter = new class ICQQAdapter {
       const msg = await get(), fnc = {}
       switch (msg) {
         case "网页反代": {
-          const url = `https://HanXuan-GT.HF.Space/captcha/slider?key=${id}`
+          const url = `https://GT.928100.xyz/captcha/slider?key=${id}`
           const ws = new (await import("ws")).WebSocket(url)
           const wsSend = data => {
             Bot.makeLog("debug", [`发送 ${url}`, data], id)
