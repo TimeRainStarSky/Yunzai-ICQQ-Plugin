@@ -449,6 +449,7 @@ const adapter = new (class ICQQAdapter {
           (typeof pick.renew === "function" && pick.renew()) ||
           (typeof pick.getSimpleInfo === "function" && pick.getSimpleInfo())
       case "pickMember":
+      case "asMember":
         return (...args) => {
           for (const i in args) args[i] = Number(args[i]) || args[i]
           const pickMember = pick[prop](...args)
