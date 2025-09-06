@@ -723,6 +723,8 @@ const adapter = new (class ICQQAdapter {
       send(`[${id}] 登录错误：${data.message}(${data.code})\n` + `发送 #Bot上线${id} 重新登录`)
     })
     bot.on("system.offline", data => {
+      const i = Bot.uin.indexOf(id)
+      if (i !== -1) Bot.uin.splice(i, 1)
       Bot.em("system.offline", data)
       send(`[${id}] 账号下线：${data.message}\n` + `发送 #Bot上线${id} 重新登录`)
     })
@@ -730,6 +732,7 @@ const adapter = new (class ICQQAdapter {
       Bot.em("system.online", data)
       bot.logger = log
       if (sendMsg) send(`[${id}] 登录完成`)
+      Bot.em(`connect.${id}`, { self_id: id })
     })
 
     Bot[id] = new Proxy(
@@ -778,7 +781,6 @@ const adapter = new (class ICQQAdapter {
       })
 
     Bot.makeLog("mark", `${this.name}(${this.id}) ${this.version} 已连接`, id)
-    Bot.em(`connect.${id}`, { self_id: id })
     return true
   }
 
