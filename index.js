@@ -19,6 +19,7 @@ for (const i of ["Model", "node_modules"])
     const p = JSON.parse(await fs.readFile(`${dir}package.json`, "utf8"))
     icqq = (await import(`file://${dir}${p.main}`)).default
     icqq.package = p
+    if (!p.version.startsWith("0")) break
     ;(await import(`file://${dir}lib/core/device.js`)).default.getApkInfoList = (
       await import("./Model/device.js")
     ).getApkInfoList
