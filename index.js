@@ -780,9 +780,11 @@ const adapter = new (class ICQQAdapter {
           name: this.name,
           version: this.version,
         },
-        uploadImage: this.uploadImage.bind(this, id),
-        uploadRecord: this.uploadRecord.bind(this, id),
-        uploadVideo: this.uploadVideo.bind(this, id),
+        ...(bot.useNTLogin || {
+          uploadImage: this.uploadImage.bind(this, id),
+          uploadRecord: this.uploadRecord.bind(this, id),
+          uploadVideo: this.uploadVideo.bind(this, id),
+        }),
       },
       {
         get: this.getBot.bind(this, id),
