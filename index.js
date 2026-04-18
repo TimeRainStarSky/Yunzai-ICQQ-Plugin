@@ -741,13 +741,135 @@ const adapter = new (class ICQQAdapter {
       }
     })
 
-    bot.on("system.login.auth", async data => {
+    bot.on("system.login.auth", async (data) => {
       Bot.em("system.login.auth", data)
-      send(`[${id}] 请完成身份验证后，${getTips}继续登录\n${data.url}`)
-      for (;;) {
-        if ((await get()) === "继续登录") {
-          bot.login()
-          break
+
+      const base = `https://captcha-api.928100.xyz`
+      const queryCacheUrl = `${base}/query-bound-phone?uin=${id}`
+      const getTicketUrl = `${base}/get-ticket?uin=${id}`
+      const uploadQqInfoUrl = `${base}/upload-qqInfo?uin=${id}`
+      const getVerifyStatusUrl = `${base}/get-verify-status?uin=${id}`
+
+      send(`https://Auth.928100.xyz?uin=${id}`)
+
+      const timeout = 5 * 60 * 1000
+      const startTime = Date.now()
+      let isLoggedIn = false
+
+      const checkFinalStatus = async () => {
+        while (!isLoggedIn && Date.now() - startTime <= timeout) {
+          try {
+            const res = await fetch(getVerifyStatusUrl)
+            const json = await res.json()
+
+            if (json.status === 1) {
+              logger.info(`[${id}] 登录成功`)
+              bot.login(id, password)
+              isLoggedIn = true
+              return
+            } else if (json.status === 0) {
+              // 等待验证中
+            } else {
+              logger.warn(`[${id}] 验证状态异常: ${JSON.stringify(json)}`)
+            }
+          } catch (err) {
+            logger.error(`[${id}] 请求验证状态出错:`, err)
+          }
+
+          await new Promise(r => setTimeout(r, 5000))
+        }
+
+        if (!isLoggedIn) {
+          send(`[${id}] 登录验证超时`)
+        }
+      }
+
+      const getTicketAndRandstr = async () => {
+        while (Date.now() - startTime <= timeout) {
+          try {
+            const res = await fetch(getTicketUrl)
+            const json = await res.json()
+            if (json.status === 0 && json.data?.ticket && json.data?.randstr) {
+              return json.data
+            } else if (json.status === 1) {
+              // 等待扫码等状态
+            } else {
+              logger.warn(`[${id}] /get-ticket 返回异常: ${JSON.stringify(json)}`)
+            }
+          } catch (err) {
+            logger.error(`[${id}] 请求 /get-ticket 出错:`, err)
+          }
+
+          await new Promise(r => setTimeout(r, 5000))
+        }
+
+        send(`[${id}] 获取登录凭证超时`)
+        return null
+      }
+
+      const uploadQqInfo = async (ticketData) => {
+        try {
+          const sig = decodeURIComponent(data.url).match(/sig=([^&]+)/)?.[1]
+          if (!sig) logger.warn(`[${id}] 提取 sig 失败`)
+
+          const payload = {
+            version: bot.apk.ver,
+            sig,
+            ticket: ticketData.ticket,
+            randstr: ticketData.randstr,
+            guid: data.device.guid,
+            qimei: data.device.qimei,
+            appid: data.device.subappid,
+          }
+
+          logger.info(`[${id}] 上传设备信息: ${JSON.stringify(payload)}`)
+
+          const res = await fetch(uploadQqInfoUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+
+          const result = await res.json()
+
+          if (result.status === 0) {
+            logger.info(`[${id}] QQ 信息上传成功`)
+            return true
+          } else {
+            logger.warn(`[${id}] 上传失败: ${JSON.stringify(result)}`)
+            send(`[${id}] 上传登录信息失败`)
+            return false
+          }
+        } catch (err) {
+          logger.error(`[${id}] 上传设备信息出错:`, err)
+          send(`[${id}] 上传登录信息时发生错误`)
+          return false
+        }
+      }
+
+      try {
+        const cacheResponse = await fetch(queryCacheUrl)
+        const cacheResult = await cacheResponse.json()
+
+        if (cacheResult?.retcode === 0) {
+          logger.info(`[${id}] 检测到缓存，跳过凭证获取与设备信息上传`)
+          await checkFinalStatus()
+          return
+        } else {
+          logger.info(`[${id}] 无缓存，开始获取登录凭证流程`)
+        }
+      } catch (err) {
+        logger.warn(`[${id}] 查询缓存失败，将继续执行完整流程: ${err}`)
+      }
+
+      const ticketData = await getTicketAndRandstr()
+
+      if (ticketData) {
+        const uploaded = await uploadQqInfo(ticketData)
+        if (uploaded) {
+          await checkFinalStatus()
+        } else {
+          send(`[${id}] 登录流程终止，上传失败`)
         }
       }
     })
