@@ -744,21 +744,15 @@ const adapter = new (class ICQQAdapter {
     bot.on("system.login.auth", async data => {
       Bot.em("system.login.auth", data)
       const url = path => `https://captcha-api.928100.xyz/${path}?uin=${id}`
-      send(`https://Auth.928100.xyz?uin=${id}`)
-      const checkFinalStatus = async () => {
+      send(`[${id}] 请打开下方链接完成登录验证\nhttps://Auth.928100.xyz?uin=${id}`)
+      const checkStatus = async () => {
         for (let i = 0; i < 60; i++) {
           try {
             const res = await (await fetch(url("get-verify-status"))).json()
-            if (res.status === 1) {
-              Bot.makeLog("info", "验证完成", id)
-              return bot.login(id, password)
-            } else if (res.status === 0) {
-              // 等待验证中
-            } else {
-              Bot.makeLog("warn", ["验证状态异常", json], id)
-            }
+            if (res.status === 1) return bot.login(id, password)
+            else if (res.status !== 0) Bot.makeLog("warn", ["验证错误", res], id)
           } catch (err) {
-            Bot.makeLog("error", ["请求验证状态出错", err], id)
+            Bot.makeLog("error", ["验证请求错误", err], id)
           }
           await Bot.sleep(5000)
         }
@@ -768,13 +762,11 @@ const adapter = new (class ICQQAdapter {
       try {
         const res = await (await fetch(url("query-bound-phone"))).json()
         if (res?.retcode === 0) {
-          Bot.makeLog("info", "检测到缓存，跳过凭证获取与设备信息上传", id)
-          return checkFinalStatus()
-        } else {
-          Bot.makeLog("info", "无缓存，开始获取登录凭证流程", id)
+          Bot.makeLog("info", "存在设备信息缓存，开始登录验证", id)
+          return checkStatus()
         }
       } catch (err) {
-        Bot.makeLog("warn", ["查询缓存失败，将继续执行完整流程", err], id)
+        Bot.makeLog("warn", ["查询设备信息缓存失败", err], id)
       }
 
       let ticket
@@ -784,20 +776,18 @@ const adapter = new (class ICQQAdapter {
           if (res.status === 0 && res.data?.ticket && res.data?.randstr) {
             ticket = res.data
             break
-          } else if (res.status === 1) {
-            // 等待扫码等状态
-          } else {
-            Bot.makeLog("warn", ["ticket 返回错误", json], id)
+          } else if (res.status !== 1) {
+            Bot.makeLog("warn", ["ticket 错误", res], id)
           }
         } catch (err) {
           Bot.makeLog("error", ["ticket 请求错误", err], id)
         }
         await Bot.sleep(5000)
       }
-      if (!ticket) return send(`[${id}] 获取登录凭证超时，发送 #Bot上线${id} 重新登录`)
+      if (!ticket) return send(`[${id}] ticket 验证超时，发送 #Bot上线${id} 重新登录`)
 
       const sig = decodeURIComponent(data.url).match(/sig=([^&]+)/)?.[1]
-      if (!sig) Bot.makeLog("warn", "sig 提取失败", id)
+      if (!sig) Bot.makeLog("warn", ["sig 提取失败", data], id)
 
       const payload = {
         version: bot.apk.ver,
@@ -821,17 +811,16 @@ const adapter = new (class ICQQAdapter {
           ).json()
 
           if (res.status === 0) {
-            Bot.makeLog("info", "设备信息上传成功", id)
-            return checkFinalStatus()
-          } else {
-            Bot.makeLog("warn", ["设备信息返回错误", res], id)
+            Bot.makeLog("info", "设备信息上传成功，开始登录验证", id)
+            return checkStatus()
           }
+          Bot.makeLog("warn", ["设备信息错误", res], id)
         } catch (err) {
           Bot.makeLog("error", ["设备信息上传错误", err], id)
         }
         await Bot.sleep(5000)
       }
-      return send(`[${id}] 上传登录信息超时，发送 #Bot上线${id} 重新登录`)
+      return send(`[${id}] 设备信息上传超时，发送 #Bot上线${id} 重新登录`)
     })
 
     bot.on("system.login.error", data => {
