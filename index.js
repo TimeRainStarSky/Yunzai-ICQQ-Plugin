@@ -833,11 +833,27 @@ const adapter = new (class ICQQAdapter {
       Bot.em("system.offline", data)
       send(`[${id}] 账号下线：${data.message}\n` + `发送 #Bot上线${id} 重新登录`)
     })
-    bot.on("system.online", data => {
+    bot.on("system.online", async data => {
       Bot.em("system.online", data)
       bot.logger = log
       if (sendMsg) send(`[${id}] 登录完成`)
       Bot.em(`connect.${id}`, { self_id: id })
+      if (bot.sig?.sign_api_addr)
+        try {
+          const url = new URL(bot.sig.sign_api_addr)
+          if (!url.pathname.endsWith("/")) url.pathname += "/"
+          url.pathname += "cmd_whitelist"
+          url.searchParams.set("ver", bot.apk.ver)
+          url.searchParams.set("fekit_ver", bot.apk.fekit_ver ?? "")
+          url.searchParams.set("uin", bot.uin ?? 0)
+          const res = await (await fetch(url)).json()
+          if (res?.data?.list?.length > 0) {
+            bot.signCmd = res.data.list
+            Bot.makeLog("debug", [`cmd_whitelist 已更新`, bot.signCmd], id)
+          }
+        } catch (err) {
+          Bot.makeLog("debug", ["cmd_whitelist 获取失败", err], id)
+        }
     })
 
     Bot[id] = new Proxy(
