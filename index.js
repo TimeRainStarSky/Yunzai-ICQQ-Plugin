@@ -254,7 +254,8 @@ const adapter = new (class ICQQAdapter {
           content += i.data
           break
         case "button":
-          button.push(...this.makeButtons(id, pick, i.data, true))
+          if (i.data) button.push(...this.makeButtons(id, pick, i.data, true))
+          else if (i.content?.rows) button.push(...i.content.rows)
           break
         case "node":
           for (const node of i.data)
@@ -338,18 +339,22 @@ const adapter = new (class ICQQAdapter {
             continue
           case "button":
             if (config.markdown.button) {
+              let rows
+              if (i.data) rows = this.makeButtons(id, pick, i.data, true)
+              else if (i.content?.rows) rows = i.content.rows
+              if (!rows?.length) continue
               if (config.markdown.button === "direct" || config.markdown.mode === "mix")
                 message.push({
                   type: "button",
                   appid: this.markdown_appid,
-                  content: { rows: this.makeButtons(id, pick, i.data) },
+                  content: { rows },
                 })
               else if (config.markdown.button === "separate")
                 messages.push([
                   {
                     type: "button",
                     appid: this.markdown_appid,
-                    content: { rows: this.makeButtons(id, pick, i.data) },
+                    content: { rows },
                   },
                 ])
               else return [await this.makeMarkdownMsg(id, pick, msg)]
